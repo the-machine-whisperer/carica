@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/06_verified.schema.json",
+  "title": "S6 verify — adversarial fact check on the top candidates",
+  "type": "object",
+  "allOf": [{ "$ref": "_defs.schema.json#/definitions/envelope" }],
+  "required": ["schema_version", "stage", "run_id", "generated_at", "agent", "candidates"],
+  "properties": {
+    "schema_version": {},
+    "stage": { "const": "verify" },
+    "run_id": {},
+    "generated_at": {},
+    "agent": {},
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["story_id", "claims", "public_figure_confirmed", "censor_clear", "verdict"],
+        "properties": {
+          "story_id": { "type": "string" },
+          "claims": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Every factual proposition the cartoon would rest on, checked independently.",
+            "items": {
+              "type": "object",
+              "required": ["text", "status", "sources"],
+              "properties": {
+                "text": { "type": "string", "minLength": 10 },
+                "status": {
+                  "type": "string",
+                  "enum": ["verified", "partially_verified", "unverified", "contradicted"]
+                },
+                "sources": {
+                  "type": "array",
+                  "description": "Independent sources. 'verified' requires at least 2 that do not share an owner.",
+                  "items": {
+                    "type": "object",
+                    "required": ["url", "outlet_id"],
+                    "properties": {
+                      "url": { "$ref": "_defs.schema.json#/definitions/url" },
+                      "outlet_id": { "type": "string" },
+                      "evidence_id": { "$ref": "_defs.schema.json#/definitions/evidenceId" }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "note": { "type": "string" }
+              },
+              "allOf": [
+                {
+                  "if": { "properties": { "status": { "const": "verified" } } },
+                  "then": { "properties": { "sources": { "minItems": 2 } } }
+                }
+              ],
+              "additionalProperties": false
+            }
+          },
+          "public_figure_confirmed": { "type": "boolean" },
+          "censor_clear": { "type": "boolean" },
+          "verdict": {
+            "type": "string",
+            "enum": ["proceed", "proceed_with_stripped_claims", "drop"]
+          },
+          "stripped_claims": { "type": "array", "items": { "type": "string" } },
+          "falsification_attempts": {
+            "type": "array",
+            "minItems": 1,
+            "description": "What the verifier actively tried to disprove and what happened. A verifier that only confirms has not verified.",
+            "items": {
+              "type": "object",
+              "required": ["attempted", "outcome"],
+              "properties": {
+                "attempted": { "type": "string" },
+                "outcome": { "type": "string", "enum": ["held", "refuted", "inconclusive"] },
+                "note": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "stage": "cluster",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T06:48:03Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "stories": [
+    {
+      "id": "st_night_vote",
+      "title_he": "ההעברה התקציבית אושרה בישיבת לילה לאחר הודעת ביטול",
+      "title_en": "Budget transfer approved at a 3am sitting reconvened after a cancellation notice",
+      "summary_en": "The finance committee approved a contested budget transfer by a single vote at approximately 03:00, at a sitting reconvened roughly an hour after members were notified it had been cancelled. Three members say they were never told it was back on.",
+      "member_item_ids": ["it_ynet_a1", "it_mako_a2", "it_hrz_a3"],
+      "outlet_breadth": 3,
+      "outlet_ids": ["ynet", "mako_n12", "haaretz"],
+      "figures_raw": ["יו\"ר ועדת הכספים", "רותי בן-שחר", "בן שחר"],
+      "name_variants_merged": [
+        {
+          "canonical": "רותי בן-שחר",
+          "variants": ["יו\"ר ועדת הכספים", "בן שחר", "בן-שחר", "היו\"ר"]
+        }
+      ],
+      "first_seen": "2026-08-10T04:12:00Z",
+      "last_updated": "2026-08-10T09:02:00Z",
+      "engagement_total": { "comments": 6430, "shares": 880 }
+    },
+    {
+      "id": "st_recycled_renders",
+      "title_he": "התוכנית החדשה לדיור הוצגה עם הדמיות משנת 2019",
+      "title_en": "New housing plan presented with renderings recycled from 2019",
+      "summary_en": "The ministry presented a national housing plan in which three of five architectural renderings had already appeared in a 2019 announcement. The ministry has not disputed the identification.",
+      "member_item_ids": ["it_toi_b1", "it_ynet_b2"],
+      "outlet_breadth": 2,
+      "outlet_ids": ["toi", "ynet"],
+      "figures_raw": ["השר לתחבורה ודיור", "אבנר גלעד"],
+      "name_variants_merged": [
+        {
+          "canonical": "אבנר גלעד",
+          "variants": ["השר לתחבורה ודיור", "גלעד", "השר"]
+        }
+      ],
+      "first_seen": "2026-08-09T14:30:00Z",
+      "last_updated": "2026-08-09T16:10:00Z",
+      "engagement_total": { "comments": 2302, "shares": 640 }
+    }
+  ],
+  "unclustered_item_ids": []
+}

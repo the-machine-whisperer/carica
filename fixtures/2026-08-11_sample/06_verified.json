@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "stage": "verify",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T07:51:12Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "candidates": [
+    {
+      "story_id": "st_night_vote",
+      "claims": [
+        {
+          "text": "The finance committee approved the budget transfer at approximately 03:00 on 10 August 2026.",
+          "status": "verified",
+          "sources": [
+            { "url": "https://www.ynet.co.il/news/article/fixture-a1", "outlet_id": "ynet", "evidence_id": "ev_v_nv_01" },
+            { "url": "https://www.mako.co.il/news-israel/fixture-a2", "outlet_id": "mako_n12", "evidence_id": "ev_v_nv_02" }
+          ],
+          "note": "Ynet and Mako are separately owned, so this clears the two-independent-sources bar."
+        },
+        {
+          "text": "Committee members were sent a cancellation notice roughly one hour before the sitting reconvened.",
+          "status": "partially_verified",
+          "sources": [
+            { "url": "https://www.mako.co.il/news-israel/fixture-a2", "outlet_id": "mako_n12", "evidence_id": "ev_v_nv_02" }
+          ],
+          "note": "Only three members' accounts, all via one outlet. The notice itself has not been published. The cartoon may depict the dispute; it may not assert the timing as fact."
+        },
+        {
+          "text": "The chair deliberately reconvened the sitting to exclude opposing members.",
+          "status": "unverified",
+          "sources": [],
+          "note": "This is an inference about motive that no source establishes. STRIPPED — it may not appear in any concept, explicitly or by implication."
+        }
+      ],
+      "public_figure_confirmed": true,
+      "censor_clear": true,
+      "verdict": "proceed_with_stripped_claims",
+      "stripped_claims": [
+        "The chair deliberately reconvened the sitting to exclude opposing members."
+      ],
+      "falsification_attempts": [
+        {
+          "attempted": "Searched for a committee statement, correction or clarification issued after the initial reports that would contradict the 03:00 timing.",
+          "outcome": "held",
+          "note": "No denial or correction found; the timing is not in dispute in any source."
+        },
+        {
+          "attempted": "Checked whether the quoted member complaint was truncated in a way that reverses its meaning.",
+          "outcome": "held",
+          "note": "The quote appears in the same form in both the headline and the body."
+        },
+        {
+          "attempted": "Tried to establish intent behind the reconvening from any on-record source.",
+          "outcome": "refuted",
+          "note": "No source supports an intent claim. This is why it is stripped rather than softened."
+        }
+      ]
+    },
+    {
+      "story_id": "st_recycled_renders",
+      "claims": [
+        {
+          "text": "Three of five renderings in the 2026 housing presentation previously appeared in a 2019 ministry announcement.",
+          "status": "verified",
+          "sources": [
+            { "url": "https://www.timesofisrael.com/fixture-b1", "outlet_id": "toi", "evidence_id": "ev_v_rr_01" },
+            { "url": "https://www.ynet.co.il/news/article/fixture-b2", "outlet_id": "ynet", "evidence_id": "ev_v_rr_02" }
+          ],
+          "note": "Independently owned, and the claim is checkable by direct comparison of two published documents."
+        },
+        {
+          "text": "The ministry has not disputed the identification.",
+          "status": "verified",
+          "sources": [
+            { "url": "https://www.timesofisrael.com/fixture-b1", "outlet_id": "toi", "evidence_id": "ev_v_rr_01" },
+            { "url": "https://www.ynet.co.il/news/article/fixture-b2", "outlet_id": "ynet", "evidence_id": "ev_v_rr_02" }
+          ]
+        }
+      ],
+      "public_figure_confirmed": true,
+      "censor_clear": true,
+      "verdict": "proceed",
+      "stripped_claims": [],
+      "falsification_attempts": [
+        {
+          "attempted": "Looked for a ministry response, denial or explanation published after the initial reports.",
+          "outcome": "held",
+          "note": "None found in the 48 hours following publication."
+        },
+        {
+          "attempted": "Checked whether the 2019 renderings were generic stock imagery, which would make reuse unremarkable.",
+          "outcome": "inconclusive",
+          "note": "Provenance of the original images could not be established. The cartoon should stay on 'reused', not on 'faked'."
+        }
+      ]
+    }
+  ]
+}

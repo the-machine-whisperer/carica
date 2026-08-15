@@ -1,0 +1,139 @@
+{
+  "schema_version": "1.0",
+  "stage": "ideate",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T08:19:40Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "candidates": [
+    {
+      "story_id": "st_night_vote",
+      "concepts": [
+        {
+          "id": "cp_nv_theatre",
+          "metaphor_family": "theatre_stage",
+          "gag_line": "The show goes on, at 3am, to an auditorium of empty seats and one raised hand.",
+          "metaphor": "The committee sitting as a theatre performance: the cancellation notice is the sign on the box office door, and the vote is the show playing to nobody.",
+          "cast": [
+            {
+              "figure": "Ruti Ben-Shahar, Finance Committee chair",
+              "caricature_handles": ["reading glasses pushed up into her hair", "committee gavel", "upright podium posture", "dark blazer"],
+              "role_in_frame": "Centre stage, mid-address, one hand raised in a vote"
+            }
+          ],
+          "composition": "Wide shot from the rear stalls. Rows of empty red seats fill the foreground; the lit stage is small and distant. A clock above the proscenium reads 03:00. A hand-lettered plate hangs on the door at frame left.",
+          "read_order": ["the sea of empty seats", "the single lit figure with a raised hand", "the clock reading 3", "the sign on the door"],
+          "lettering_plan": [
+            { "text_he": "הישיבה בוטלה", "text_en_gloss": "The sitting is cancelled", "placement": "hand-lettered plate on the door at frame left" }
+          ],
+          "legibility_self_score": 9
+        },
+        {
+          "id": "cp_nv_domestic",
+          "metaphor_family": "mundane_domestic",
+          "gag_line": "Dinner was cancelled, so she ate the whole thing herself.",
+          "metaphor": "The budget as a family meal: a note on the fridge cancels dinner while one diner works through every plate at the table alone.",
+          "cast": [
+            {
+              "figure": "Ruti Ben-Shahar, Finance Committee chair",
+              "caricature_handles": ["reading glasses pushed up into her hair", "dark blazer worn over an apron"],
+              "role_in_frame": "Seated alone at a long table, mid-meal"
+            }
+          ],
+          "composition": "Long dining table shot down its length, five empty place settings and one occupied. A kitchen clock at the rear reads 03:00. A note is stuck to the fridge behind her.",
+          "read_order": ["the long table of empty settings", "the one diner eating", "the note on the fridge", "the clock"],
+          "lettering_plan": [
+            { "text_he": "ארוחת הערב מבוטלת", "text_en_gloss": "Dinner is cancelled", "placement": "note on the fridge door, rear of frame" }
+          ],
+          "legibility_self_score": 7
+        },
+        {
+          "id": "cp_nv_machine",
+          "metaphor_family": "machine_apparatus",
+          "gag_line": "The out-of-order machine dispenses anyway, to nobody, at three in the morning.",
+          "metaphor": "The committee as a vending machine bearing an out-of-order sign, quietly dispensing a sack of money into an empty corridor.",
+          "cast": [
+            {
+              "figure": "Ruti Ben-Shahar, Finance Committee chair",
+              "caricature_handles": ["reading glasses pushed up into her hair", "hand withdrawing from the machine's side panel"],
+              "role_in_frame": "Half-visible at frame edge, walking away"
+            }
+          ],
+          "composition": "A dim corridor at night, single overhead strip light. The machine dominates centre frame with a taped sign on its glass; a sack drops into the tray. A figure exits at frame right.",
+          "read_order": ["the taped sign on the machine", "the sack dropping into the tray", "the empty corridor", "the figure leaving"],
+          "lettering_plan": [
+            { "text_he": "מקולקל", "text_en_gloss": "Out of order", "placement": "taped sign across the machine's glass front" }
+          ],
+          "legibility_self_score": 8
+        }
+      ],
+      "selected_primary": "cp_nv_theatre",
+      "selected_alternate": "cp_nv_machine",
+      "critique": "The theatre concept wins on read order: the empty seats land before anything else and carry the whole point, so the drawing works even at column width on a phone screen. The machine concept is sharper but reads as an accusation of deliberate self-dealing, which is exactly the motive claim S6 stripped as unverified — it implies what we cannot assert. The strongest objection to the theatre concept is that the empty-auditorium device is a well-worn editorial trope and an alert reader may find it familiar; it survives because the 03:00 clock and the cancellation plate make it specific to this story rather than generic."
+    },
+    {
+      "story_id": "st_recycled_renders",
+      "concepts": [
+        {
+          "id": "cp_rr_copier",
+          "metaphor_family": "machine_apparatus",
+          "gag_line": "The new housing plan, fresh off the photocopier, still warm from 2019.",
+          "metaphor": "Policy recycling made literal: the minister unveils a presentation board that is visibly a photocopy, the machine still running behind him.",
+          "cast": [
+            {
+              "figure": "Avner Gilad, Minister of Transport and Housing",
+              "caricature_handles": ["heavy square spectacles", "ministerial lapel pin", "sleeves rolled to the elbow", "presentation pointer"],
+              "role_in_frame": "At the podium, gesturing proudly at the board"
+            }
+          ],
+          "composition": "Press-conference three-quarter view. Minister at frame left at a podium; an easel board at frame right showing an architectural rendering with visible copier streaks and a curled corner. Behind him a photocopier mid-cycle, identical sheets stacking into the tray.",
+          "read_order": ["the minister presenting", "the streaked, curling rendering", "the photocopier stacking identical sheets", "the dated corner of the page"],
+          "lettering_plan": [
+            { "text_he": "תוכנית הדיור החדשה", "text_en_gloss": "The new housing plan", "placement": "banner across the top of the easel board" }
+          ],
+          "legibility_self_score": 9
+        },
+        {
+          "id": "cp_rr_leftovers",
+          "metaphor_family": "mundane_domestic",
+          "gag_line": "Tonight's special: yesterday's, reheated and replated.",
+          "metaphor": "The announcement as a restaurant dish — a waiter presents a domed silver platter which, uncovered, holds an obviously reheated portion with a 2019 date label still on the wrap.",
+          "cast": [
+            {
+              "figure": "Avner Gilad, Minister of Transport and Housing",
+              "caricature_handles": ["heavy square spectacles", "ministerial lapel pin", "waiter's folded cloth over the forearm"],
+              "role_in_frame": "Presenting the platter with a flourish"
+            }
+          ],
+          "composition": "Tight two-thirds frame on the platter being uncovered at a table, minister behind it. The cling film and its date label are the sharpest-focus element in the picture.",
+          "read_order": ["the flourish of the platter lid", "the cling film still on the food", "the date on the label", "the minister's expression"],
+          "lettering_plan": [
+            { "text_he": "2019", "text_en_gloss": "2019", "placement": "sticker on the cling film" }
+          ],
+          "legibility_self_score": 7
+        },
+        {
+          "id": "cp_rr_backdrop",
+          "metaphor_family": "theatre_stage",
+          "gag_line": "Same backdrop, new announcement — the stagehands did not even change the scenery.",
+          "metaphor": "A painted theatrical backdrop of a housing development being lowered into place for the second time, its reverse side stencilled with the year it was first used.",
+          "cast": [
+            {
+              "figure": "Avner Gilad, Minister of Transport and Housing",
+              "caricature_handles": ["heavy square spectacles", "ministerial lapel pin"],
+              "role_in_frame": "Downstage, arms wide, presenting the backdrop"
+            }
+          ],
+          "composition": "Side-on stage view so both faces of the descending backdrop are visible: painted housing towers facing the audience, stencilled year facing the wings.",
+          "read_order": ["the minister presenting", "the descending backdrop", "the stencilled year on its reverse", "the bored stagehand"],
+          "lettering_plan": [
+            { "text_he": "2019", "text_en_gloss": "2019", "placement": "stencilled on the reverse of the backdrop, visible from the wings" }
+          ],
+          "legibility_self_score": 6
+        }
+      ],
+      "selected_primary": "cp_rr_copier",
+      "selected_alternate": "cp_rr_leftovers",
+      "critique": "The photocopier concept is the most legible thing on the whole slate — copier streaks and a stacking tray are universally understood and need no caption. The backdrop concept is the most elegant but demands the reader parse a side-on stage view to find the joke on the reverse face, which is a fourth-position read and therefore a failure. The strongest objection to the copier concept is that it is the obvious idea, the one any cartoonist would reach for first; it is chosen anyway because obviousness is a virtue in a single frame read in eight seconds over breakfast."
+    }
+  ]
+}

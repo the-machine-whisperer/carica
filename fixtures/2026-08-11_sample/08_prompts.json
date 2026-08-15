@@ -1,0 +1,131 @@
+{
+  "schema_version": "1.0",
+  "stage": "prompt",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T08:47:02Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "packages": [
+    {
+      "story_id": "st_night_vote",
+      "concept_id": "cp_nv_theatre",
+      "premise_he": "הישיבה בוטלה, ההצגה נמשכה.",
+      "premise_en": "The sitting was cancelled; the performance went ahead anyway.",
+      "image_prompt": {
+        "named_variant": "A broadsheet editorial cartoon. The interior of an old parliamentary theatre seen from the rear stalls: rank upon rank of empty red seats fill the foreground and middle distance, receding toward a small, brightly lit stage. On that stage, alone at a committee podium, stands Ruti Ben-Shahar, chair of the Knesset finance committee, reading glasses pushed up into her hair, a gavel in one hand and the other hand raised in a vote. A large clock set into the proscenium arch above her reads three o'clock. At frame left, a door stands ajar with a hand-lettered sign hanging from its handle reading the Hebrew words for 'the sitting is cancelled'. Pen and ink with crosshatch shading and a restrained gouache wash.",
+        "attribute_variant": "A broadsheet editorial cartoon. The interior of an old parliamentary theatre seen from the rear stalls: rank upon rank of empty red seats fill the foreground and middle distance, receding toward a small, brightly lit stage. On that stage, alone at a committee podium, stands a woman in her sixties in a dark blazer, her reading glasses pushed up into her hair, a gavel in one hand and the other hand raised in a vote. A large clock set into the proscenium arch above her reads three o'clock. At frame left, a door stands ajar with a small blank hand-lettered plate hanging from its handle. Pen and ink with crosshatch shading and a restrained gouache wash.",
+        "style": {
+          "register": "Broadsheet editorial cartoon in the Israeli press tradition of Dosh, Ze'ev and Biderman — economical line, strong silhouette, the joke carried by drawing rather than rendering",
+          "medium": "Pen and ink crosshatch with a restrained gouache wash",
+          "palette": "Warm sepia and deep red for the seating, cold white for the stage light, otherwise near-monochrome",
+          "line": "Confident varied-weight contour, heavy on the foreground seat backs, light and sparse on the distant stage",
+          "lighting": "Single hard stage light from above; the auditorium in deep shadow",
+          "camera": "Low eye level from the rear stalls, so the empty seats loom and the lone figure reads as small and exposed rather than commanding"
+        },
+        "aspect_ratio": "3:2",
+        "blank_plate_instruction": "Leave the door sign, the podium nameplate and any other signage completely blank — drawn, positioned and sized, but with no text of any kind. All lettering is typeset afterwards."
+      },
+      "lettering_spec": [
+        {
+          "text_he": "הישיבה בוטלה",
+          "text_en_gloss": "The sitting is cancelled",
+          "placement": "On the blank hand-lettered plate hanging from the door handle, frame left",
+          "role": "sign",
+          "font_recommendation": "Hand-lettered Hebrew brush face; Fbietz Ploni Bold or similar, slightly irregular baseline",
+          "size_hint": "Legible at column width — roughly 1/14 of frame height"
+        }
+      ],
+      "negative_list": [
+        "no exaggerated or altered nose, lips or facial proportions — recognition comes from the glasses, posture and gavel only",
+        "no puppet strings, marionette rigging or any figure controlling another",
+        "no money bags, coins, gold or banking imagery",
+        "no religious symbols anywhere in frame",
+        "no other identifiable people — the auditorium is empty, not filled with caricatured members",
+        "no depiction of the chair as scheming, conspiring or acting covertly — motive is unverified and must not be implied",
+        "no Hebrew or any other text rendered inside the image"
+      ],
+      "captions": [
+        { "text_he": "\"הודענו שהישיבה מבוטלת.\"", "text_en_gloss": "\"We announced the sitting was cancelled.\"", "tone": "deadpan" },
+        { "text_he": "מניין חוקי.", "text_en_gloss": "A legal quorum.", "tone": "dry" },
+        { "text_he": "שלוש לפנות בוקר, ברוב של קול אחד.", "text_en_gloss": "Three in the morning, by a majority of one.", "tone": "factual, letting the image carry it" }
+      ],
+      "alt_text_he": "קריקטורה: אולם ועדה ריק ובו שורות מושבים נטושות, ועל הבמה המוארת עומדת לבדה יושבת ראש הוועדה ומצביעה. השעון מעל הבמה מראה שלוש לפנות בוקר, ועל דלת האולם תלוי שלט שעליו כתוב שהישיבה בוטלה.",
+      "alt_text_en": "Cartoon: an empty committee auditorium of abandoned seats. Alone on the lit stage, the committee chair raises her hand in a vote. The clock above reads three o'clock and a sign on the door says the sitting is cancelled — the joke being that the cancelled meeting went ahead without anyone there.",
+      "sources": [
+        { "url": "https://www.ynet.co.il/news/article/fixture-a1", "outlet_id": "ynet", "title": "Finance committee approved the budget transfer at three in the morning" },
+        { "url": "https://www.mako.co.il/news-israel/fixture-a2", "outlet_id": "mako_n12", "title": "Members: we got a cancellation notice and then found they had voted without us" }
+      ],
+      "verified_claims": [
+        "The finance committee approved the budget transfer at approximately 03:00 on 10 August 2026."
+      ],
+      "risk_notes": [
+        { "kind": "defamation", "note": "The cartoon must depict the DISPUTE, not a motive. S6 stripped the claim that the chair reconvened deliberately to exclude members; any composition implying intent is out of bounds.", "severity": "high" },
+        { "kind": "taste", "note": "The cancellation timing rests on three members' accounts via a single outlet and is only partially verified. The caption must not assert it.", "severity": "medium" }
+      ]
+    },
+    {
+      "story_id": "st_recycled_renders",
+      "concept_id": "cp_rr_copier",
+      "premise_he": "תוכנית דיור חדשה, ישר מהמכונה — ועדיין חמה מ־2019.",
+      "premise_en": "A new housing plan, straight off the photocopier, still warm from 2019.",
+      "image_prompt": {
+        "named_variant": "A broadsheet editorial cartoon of a government press conference. At frame left, Avner Gilad, Minister of Transport and Housing, stands at a podium in heavy square spectacles with his shirtsleeves rolled to the elbow and a ministerial pin on his lapel, gesturing proudly with a pointer at an easel board. The board at frame right displays an architectural rendering of housing towers, but the sheet is visibly a photocopy: dark streak bands across it, a curled corner, toner speckle. Directly behind the minister an office photocopier is mid-cycle, its lid up and a stack of identical sheets building in the output tray. A blank banner runs across the top of the easel board. Pen and ink crosshatch with a light gouache wash.",
+        "attribute_variant": "A broadsheet editorial cartoon of a government press conference. At frame left, a middle-aged government minister in heavy square spectacles stands at a podium with his shirtsleeves rolled to the elbow and an official pin on his lapel, gesturing proudly with a pointer at an easel board. The board at frame right displays an architectural rendering of housing towers, but the sheet is visibly a photocopy: dark streak bands across it, a curled corner, toner speckle. Directly behind him an office photocopier is mid-cycle, its lid up and a stack of identical sheets building in the output tray. A blank banner runs across the top of the easel board. Pen and ink crosshatch with a light gouache wash.",
+        "style": {
+          "register": "Broadsheet editorial cartoon in the Israeli press tradition — economical line, strong silhouette, joke carried by drawing",
+          "medium": "Pen and ink crosshatch with a light gouache wash",
+          "palette": "Cool grey office tones with one warm accent on the minister's tie",
+          "line": "Clean architectural line on the machine and board, looser and livelier on the figure",
+          "lighting": "Flat institutional overhead lighting, with the copier's scanning bar throwing a hard green-white bar of light",
+          "camera": "Eye level, three-quarter view — neither flattering nor diminishing; the embarrassment should read as ordinary, not monstrous"
+        },
+        "aspect_ratio": "3:2",
+        "blank_plate_instruction": "Leave the banner across the easel board, the podium nameplate and any labels on the photocopier entirely blank — drawn and positioned but with no text of any kind. All lettering is typeset afterwards."
+      },
+      "lettering_spec": [
+        {
+          "text_he": "תוכנית הדיור החדשה",
+          "text_en_gloss": "The new housing plan",
+          "placement": "Across the blank banner at the top of the easel board",
+          "role": "label",
+          "font_recommendation": "Condensed Hebrew grotesque; Almoni Neue Bold or similar",
+          "size_hint": "Roughly 1/12 of frame height, spanning two thirds of the board width"
+        },
+        {
+          "text_he": "2019",
+          "text_en_gloss": "2019",
+          "placement": "Small, in the curled bottom corner of the copied rendering",
+          "role": "label",
+          "font_recommendation": "Same family, regular weight",
+          "size_hint": "Small but legible at column width — the reader should find it on the second look"
+        }
+      ],
+      "negative_list": [
+        "no exaggerated or altered facial proportions — recognition comes from the spectacles, rolled sleeves and lapel pin only",
+        "no money, coins or gold imagery",
+        "no puppetry, strings or hidden-hand framing",
+        "no religious symbols",
+        "no depiction of fraud or forgery — the verified claim is reuse, not fabrication",
+        "no other identifiable individuals in the press pack",
+        "no Hebrew or any other text rendered inside the image"
+      ],
+      "captions": [
+        { "text_he": "\"שום דבר לא הולך לאיבוד.\"", "text_en_gloss": "\"Nothing goes to waste.\"", "tone": "deadpan" },
+        { "text_he": "מיחזור.", "text_en_gloss": "Recycling.", "tone": "single word, dry" }
+      ],
+      "alt_text_he": "קריקטורה: שר עומד על בימת מסיבת עיתונאים ומצביע בגאווה על לוח ובו הדמיה אדריכלית שברור שהיא צילום מוקטן ומרוח, עם פס כהה ופינה מקופלת. מאחוריו מכונת צילום פועלת ומדפיסה עוד עותקים זהים.",
+      "alt_text_en": "Cartoon: a government minister at a press conference podium points proudly at an easel board showing an architectural rendering that is obviously a photocopy — streaked, speckled, with a curling corner dated 2019. Behind him a photocopier churns out more identical copies. The joke is that the new plan is a reprint of the old one.",
+      "sources": [
+        { "url": "https://www.timesofisrael.com/fixture-b1", "outlet_id": "toi", "title": "Housing plan unveiled with renderings recycled from a 2019 announcement" },
+        { "url": "https://www.ynet.co.il/news/article/fixture-b2", "outlet_id": "ynet", "title": "The new housing plan — with the old renderings" }
+      ],
+      "verified_claims": [
+        "Three of five renderings in the 2026 housing presentation previously appeared in a 2019 ministry announcement.",
+        "The ministry has not disputed the identification."
+      ],
+      "risk_notes": [
+        { "kind": "defamation", "note": "The verified claim is REUSE of imagery. The cartoon must not imply forgery, fabricated data or fraud, none of which is established.", "severity": "medium" },
+        { "kind": "taste", "note": "S6 could not establish whether the 2019 renderings were generic stock imagery, which would make reuse unremarkable. Keep the joke on 'recycled', not on 'faked'.", "severity": "low" }
+      ]
+    }
+  ]
+}

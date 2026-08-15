@@ -1,0 +1,59 @@
+# Caricature fitness rubric weights, consumed by S5.
+#
+# S5 emits SUB-SCORES and these WEIGHTS separately, and shows the arithmetic. That means
+# the editor can re-weight in the review app and re-rank instantly without re-running the
+# pipeline — and it means the ranking is arguable rather than oracular.
+#
+# Positive weights should sum to 1.0. legal_risk is negative: risk subtracts.
+
+version: 1
+positive_sum_target: 1.0
+
+weights:
+  # Can this be read in ONE frame without a caption? The highest weight, deliberately.
+  # Ridiculousness and spice pick topics; legibility decides whether the cartoon works.
+  # A hilarious story with no visual handle is a column, not a caricature.
+  legibility: 0.20
+
+  # Is there an inherent visual contradiction to exploit?
+  absurdity: 0.15
+
+  # Is there an actual joke — a reversal, an irony, a literalised metaphor —
+  # rather than merely a topic someone is angry about?
+  comedic_mechanism: 0.15
+
+  # Does it cut at power? A caricature that punches at the powerless is not spicy, it is cruel.
+  spice: 0.12
+
+  # Consequence magnitude.
+  impact: 0.12
+
+  # Will it still land at publication? The Israeli news cycle is fast and the column is
+  # semi-weekly, so the useful horizon is ~3-4 days. Weighted heavily for that reason.
+  shelf_life: 0.10
+
+  # Talkback volume, cross-outlet breadth, polarisation.
+  controversy: 0.10
+
+  # Checked against history/ledger.jsonl. Low weight but it is a tiebreaker that stops
+  # the column repeating itself, which readers notice before editors do.
+  originality: 0.06
+
+  # NEGATIVE. Defamation exposure, censor scope, sub judice, proximity to a prohibited trope.
+  # Set large enough that a high-risk story cannot win on charm alone.
+  legal_risk: -0.20
+
+# Hard floors. A candidate failing any of these is excluded regardless of weighted total —
+# these are gates, not preferences.
+floors:
+  legibility_min: 4.0        # below this it will not read in one frame, full stop
+  legal_risk_max: 7.0        # above this it goes to the standards desk before any concept work
+  shelf_life_min: 3.0        # will be stale by publication
+
+# How many candidates flow to each downstream stage.
+funnel:
+  triage_keep: 25
+  score_shortlist: 8
+  verify_top: 5
+  ideate_candidates: 5       # the "top 3-5" the brief asks for
+  concepts_per_candidate: 3

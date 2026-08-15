@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/10_render.schema.json",
+  "title": "S10 render — first visual drafts, with the refusal/fallback trail",
+  "type": "object",
+  "allOf": [{ "$ref": "_defs.schema.json#/definitions/envelope" }],
+  "required": ["schema_version", "stage", "run_id", "generated_at", "agent", "renders"],
+  "properties": {
+    "schema_version": {},
+    "stage": { "const": "render" },
+    "run_id": {},
+    "generated_at": {},
+    "agent": {},
+    "renders": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["story_id", "concept_id", "attempts", "outcome"],
+        "properties": {
+          "story_id": { "type": "string" },
+          "concept_id": { "type": "string" },
+          "attempts": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Ordered. named_variant first, attribute_variant on refusal. Refusals are logged verbatim, never silently dropped.",
+            "items": {
+              "type": "object",
+              "required": ["variant", "status"],
+              "properties": {
+                "variant": { "type": "string", "enum": ["named", "attribute", "archetype"] },
+                "status": {
+                  "type": "string",
+                  "enum": ["ok", "refused", "error", "unavailable"],
+                  "description": "The three failure states are editorially load-bearing and must never be collapsed into one another — the charter and the UI both key off the distinction. 'refused' = a renderer was reached and DECLINED ON POLICY GROUNDS; that is an editorial signal about the concept and the next variant must be tried. 'error' = a renderer was reached and failed transiently (timeout, crash, malformed output); retrying the same variant is legitimate. 'unavailable' = no renderer was reachable at all — nothing was ever asked of a model, so this says nothing whatsoever about the concept and must not be read as a refusal."
+                },
+                "model": {
+                  "type": "string",
+                  "description": "Free text naming whatever tool this attempt actually used — a local renderer, a command-line image tool, a hosted generator the agent could reach without a key. It is NOT an API model id and nothing keys off its value; it exists so the editor can tell what produced (or failed to produce) the draft."
+                },
+                "refusal_text": { "type": "string", "description": "Verbatim, for status 'refused' only. Never paraphrase a policy decline — the exact wording is what tells the editor whether the concept itself is the problem." },
+                "error": { "type": "string", "description": "For 'error', the transient failure. For 'unavailable', which renderer was looked for and how it was found to be absent." },
+                "asset_path": { "type": "string", "description": "Relative to the run directory, e.g. 10_drafts/st_x_cp_y_1.png" },
+                "duration_ms": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "outcome": {
+            "type": "string",
+            "enum": ["rendered", "all_variants_refused", "error", "no_renderer_available"],
+            "description": "'all_variants_refused' means every variant was put to a renderer and declined on policy grounds — an editorial finding about the concept, which the gate and the editor must see. 'no_renderer_available' means the agent could not reach any renderer at all, so the concept was never judged; it is an honest 'we could not draw this here', not a verdict on the idea. Recording the second as the first would silently indict a concept nothing ever looked at."
+          },
+          "drafts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["asset_path", "variant"],
+              "properties": {
+                "asset_path": { "type": "string" },
+                "variant": { "type": "string" },
+                "width": { "type": "integer" },
+                "height": { "type": "integer" },
+                "note": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

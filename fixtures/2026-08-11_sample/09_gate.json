@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "stage": "gate",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T09:05:37Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "policy_sha": "0000000000000000000000000000000000000000000000000000000000000000",
+  "verdicts": [
+    {
+      "story_id": "st_night_vote",
+      "concept_id": "cp_nv_theatre",
+      "verdict": "REVISE",
+      "checks": [
+        { "clause": "§2.1 antisemitic visual tropes", "result": "pass", "reasoning": "No physiognomic caricature, no puppetry, no octopus, no vermin, no money imagery, no religious symbols. Composition is a single small figure in a large empty room — no figure controls another and there is no reach-over-territory framing." },
+        { "clause": "§2.2 dehumanising imagery of any group", "result": "not_applicable", "reasoning": "Single named officeholder in frame; no group is depicted at all." },
+        { "clause": "§2.5 private individuals, minors, victims", "result": "pass", "reasoning": "The only person depicted is a committee chair acting in her public capacity; the auditorium is explicitly empty of other figures." },
+        { "clause": "§3 caricature handles", "result": "pass", "reasoning": "Declared handles are reading glasses, gavel, posture and blazer — all chosen attributes or role props. No facial or bodily features are used for recognition." },
+        { "clause": "§4 factual discipline", "result": "pass", "reasoning": "The image asserts only that a vote occurred at 03:00 in an empty room, which is in verified_claims. The stripped motive claim is explicitly excluded by the negative list." },
+        { "clause": "§5.1 defamation", "result": "pass", "reasoning": "Stripped of humour, the image asserts that a sitting went ahead with almost nobody present — a fact reported by two independently owned outlets and not disputed." },
+        { "clause": "§7.2 Hebrew lettering is a post-render layer", "result": "fail", "reasoning": "The named_variant prompt instructs the renderer to draw a sign 'reading the Hebrew words for the sitting is cancelled'. This directly contradicts the package's own blank_plate_instruction and will produce malformed right-to-left text that a non-Hebrew-reading reviewer will not catch." }
+      ],
+      "revision_asks": [
+        "Remove the clause 'with a hand-lettered sign hanging from its handle reading the Hebrew words for the sitting is cancelled' from named_variant, and replace it with 'with a small blank hand-lettered plate hanging from its handle' — matching the wording already used correctly in attribute_variant.",
+        "Confirm no other clause in either variant requests rendered text; the lettering_spec entry for 'הישיבה בוטלה' already covers this string as a post-render layer and needs no change."
+      ]
+    },
+    {
+      "story_id": "st_recycled_renders",
+      "concept_id": "cp_rr_copier",
+      "verdict": "PASS",
+      "checks": [
+        { "clause": "§2.1 antisemitic visual tropes", "result": "pass", "reasoning": "Checked the enumerated list item by item — no nose or physiognomic exaggeration, no blood, no puppetry or strings, no octopus or web, no vermin, no money or gold, no hidden hand, no religious symbols. Composition places the minister at eye level beside an office machine; nothing depicts control over others." },
+        { "clause": "§2.2 dehumanising imagery of any group", "result": "not_applicable", "reasoning": "One officeholder in frame; the press pack is explicitly excluded by the negative list." },
+        { "clause": "§2.5 private individuals, minors, victims", "result": "pass", "reasoning": "Only a serving minister, depicted in the act of giving an official press conference." },
+        { "clause": "§2.6 sexualised or degrading depiction", "result": "pass", "reasoning": "No bodily degradation; the subject is drawn as an ordinary man in ordinary office surroundings." },
+        { "clause": "§3 caricature handles", "result": "pass", "reasoning": "Declared handles are spectacles, rolled sleeves, lapel pin and a pointer — all chosen attributes and role props, none facial or bodily." },
+        { "clause": "§4 factual discipline", "result": "pass", "reasoning": "The image asserts that renderings were reused, which is in verified_claims and sourced to two independently owned outlets. The negative list explicitly forbids implying forgery, which is not established." },
+        { "clause": "§5.1 defamation", "result": "pass", "reasoning": "Stripped of humour the image asserts reuse of published imagery — verifiable by direct comparison of two public documents and undisputed by the ministry." },
+        { "clause": "§5.2 military censor", "result": "not_applicable", "reasoning": "Housing policy; S6 confirmed censor_clear." },
+        { "clause": "§7.2 Hebrew lettering is a post-render layer", "result": "pass", "reasoning": "Both variants specify a blank banner, the blank_plate_instruction is explicit, and both Hebrew strings are carried in lettering_spec for post-render typesetting." },
+        { "clause": "§7.3 accessibility", "result": "pass", "reasoning": "Hebrew and English alt text are both present and both describe the joke rather than only the scene." }
+      ]
+    }
+  ]
+}

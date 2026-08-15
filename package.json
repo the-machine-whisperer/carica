@@ -1,0 +1,36 @@
+{
+  "name": "caricature-pipeline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Semi-weekly political caricature synthesis pipeline — Israeli political sphere PoC",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/core",
+    "packages/codex",
+    "packages/pipeline",
+    "packages/cli",
+    "packages/server",
+    "packages/web"
+  ],
+  "bin": {
+    "carica": "packages/cli/src/bin.js"
+  },
+  "scripts": {
+    "start": "node packages/cli/src/bin.js start",
+    "carica": "node packages/cli/src/bin.js",
+    "test": "node --test 'packages/*/test/*.test.js'",
+    "build": "npm run build --workspace @carica/web",
+    "serve": "node packages/cli/src/bin.js serve",
+    "dev": "npm run dev --workspace @carica/web",
+    "gate": "npm run build && npm test && node packages/cli/src/bin.js run --replay fixtures/2026-08-11_sample --slug gate && node packages/cli/src/bin.js verify --latest",
+    "gate:phase0": "npm run gate"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "yaml": "^2.5.1"
+  }
+}

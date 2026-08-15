@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/02_items.schema.json",
+  "title": "S2 harvest — political articles fetched from ranked outlets",
+  "type": "object",
+  "allOf": [{ "$ref": "_defs.schema.json#/definitions/envelope" }],
+  "required": ["schema_version", "stage", "run_id", "generated_at", "agent", "items", "outlet_status"],
+  "properties": {
+    "schema_version": {},
+    "stage": { "const": "harvest" },
+    "run_id": {},
+    "generated_at": {},
+    "agent": {},
+    "window": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": { "$ref": "_defs.schema.json#/definitions/isoDateTime" },
+        "to": { "$ref": "_defs.schema.json#/definitions/isoDateTime" }
+      },
+      "additionalProperties": false
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "outlet_id", "url", "title", "title_lang", "dir", "published_at", "fetched_at", "evidence_id"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^it_[a-z0-9_-]+$" },
+          "outlet_id": { "type": "string" },
+          "url": { "$ref": "_defs.schema.json#/definitions/url" },
+          "canonical_url": { "$ref": "_defs.schema.json#/definitions/url" },
+          "title": { "type": "string", "minLength": 1 },
+          "title_lang": { "$ref": "_defs.schema.json#/definitions/lang" },
+          "dir": { "$ref": "_defs.schema.json#/definitions/dir" },
+          "dek": { "type": "string" },
+          "byline": { "type": "string" },
+          "section": { "type": "string" },
+          "published_at": { "$ref": "_defs.schema.json#/definitions/isoDateTime" },
+          "fetched_at": { "$ref": "_defs.schema.json#/definitions/isoDateTime" },
+          "excerpt": {
+            "type": "string",
+            "maxLength": 1200,
+            "description": "Fair-use excerpt only. Never a full paywalled body."
+          },
+          "paywalled": { "type": "boolean" },
+          "engagement": {
+            "type": "object",
+            "properties": {
+              "comments": { "type": "integer", "minimum": 0 },
+              "shares": { "type": "integer", "minimum": 0 },
+              "rotter_threads": { "type": "integer", "minimum": 0 },
+              "observed_at": { "$ref": "_defs.schema.json#/definitions/isoDateTime" }
+            },
+            "additionalProperties": false
+          },
+          "evidence_id": { "$ref": "_defs.schema.json#/definitions/evidenceId" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "outlet_status": {
+      "type": "array",
+      "minItems": 1,
+      "description": "One row per attempted outlet. A failed outlet is a recorded gap, not a silent omission.",
+      "items": {
+        "type": "object",
+        "required": ["outlet_id", "ok", "item_count", "robots_allowed"],
+        "properties": {
+          "outlet_id": { "type": "string" },
+          "ok": { "type": "boolean" },
+          "item_count": { "type": "integer", "minimum": 0 },
+          "robots_allowed": { "type": "boolean" },
+          "error": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

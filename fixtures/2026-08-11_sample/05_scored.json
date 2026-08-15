@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "stage": "score",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T07:24:55Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "weights": {
+    "legibility": 0.2,
+    "absurdity": 0.15,
+    "comedic_mechanism": 0.15,
+    "spice": 0.12,
+    "impact": 0.12,
+    "shelf_life": 0.1,
+    "controversy": 0.1,
+    "originality": 0.06,
+    "legal_risk": -0.2
+  },
+  "candidates": [
+    {
+      "story_id": "st_night_vote",
+      "rank": 1,
+      "dimensions": {
+        "legibility": {
+          "score": 8,
+          "justification": "A committee room, a clock, and empty chairs are three objects any reader recognises instantly, and the absent members are visible by their absence. Not a 9 only because the budget transfer itself has no visual form and must be carried by a label.",
+          "evidence_quote_he": "ועדת הכספים אישרה את ההעברה התקציבית בשלוש לפנות בוקר",
+          "evidence_gloss_en": "The finance committee approved the budget transfer at three in the morning",
+          "source_url": "https://www.ynet.co.il/news/article/fixture-a1"
+        },
+        "absurdity": {
+          "score": 8,
+          "justification": "The events caricature themselves: a cancellation notice followed by the cancelled thing happening anyway is already a farce structure before a cartoonist touches it.",
+          "evidence_quote_he": "קיבלנו הודעת ביטול ואז גילינו שהצביעו בלעדינו",
+          "evidence_gloss_en": "We got a cancellation notice and then discovered they had voted without us",
+          "source_url": "https://www.mako.co.il/news-israel/fixture-a2"
+        },
+        "comedic_mechanism": {
+          "score": 8,
+          "justification": "The mechanism is a clean reversal: the notice that a thing will not happen is the instrument by which it happens. That is a joke with a hinge, not merely an outrage."
+        },
+        "spice": {
+          "score": 8,
+          "justification": "Aims squarely at a committee chair's exercise of procedural power over her own members. Uncomfortable for the officeholder and squarely within legitimate scrutiny of public conduct."
+        },
+        "impact": {
+          "score": 7,
+          "justification": "A contested budget transfer with real money attached, decided by one vote, with a live dispute about the legitimacy of the process itself."
+        },
+        "shelf_life": {
+          "score": 6,
+          "justification": "Procedural disputes over committee sittings typically run for several days and often generate a follow-up challenge, so it should survive to a publication slot three days out."
+        },
+        "controversy": {
+          "score": 9,
+          "justification": "6,430 comments across three outlets in under six hours, with participants publicly contradicting each other on the record — the cluster engagement totals carry this score.",
+          "evidence_gloss_en": "engagement_total.comments = 6430 across three outlets"
+        },
+        "originality": {
+          "score": 7,
+          "justification": "The ledger holds no night-sitting or empty-chamber gag in the trailing 90 days. Marked down slightly because the empty-room composition is a well-worn editorial device generally."
+        },
+        "legal_risk": {
+          "score": 2,
+          "justification": "The procedural facts are on the record and reported across three independent owners. The dispute is about interpretation, not about whether the sitting happened. No censor or sub judice exposure."
+        }
+      },
+      "weighted_total": 7.32,
+      "arithmetic": "0.20*8 + 0.15*8 + 0.15*8 + 0.12*8 + 0.12*7 + 0.10*6 + 0.10*9 + 0.06*7 - 0.20*2 = 1.60+1.20+1.20+0.96+0.84+0.60+0.90+0.42-0.40 = 7.32",
+      "verdict_summary": "The strongest candidate on the slate. It has a hinge joke, a legible three-object composition, high measured controversy, and low legal exposure. Clears every floor.",
+      "originality_conflicts": []
+    },
+    {
+      "story_id": "st_recycled_renders",
+      "rank": 2,
+      "dimensions": {
+        "legibility": {
+          "score": 9,
+          "justification": "The highest legibility on the slate. A photocopier, a stack of identical pages and a podium is a complete visual sentence that needs no caption and no prior knowledge of the story.",
+          "evidence_quote_he": "התוכנית החדשה לדיור — עם ההדמיות הישנות",
+          "evidence_gloss_en": "The new housing plan — with the old renderings",
+          "source_url": "https://www.ynet.co.il/news/article/fixture-b2"
+        },
+        "absurdity": {
+          "score": 7,
+          "justification": "Announcing a new plan using pictures of the old plan is inherently ridiculous, though it is a familiar species of government embarrassment rather than a novel one."
+        },
+        "comedic_mechanism": {
+          "score": 7,
+          "justification": "Literalised metaphor: the recycling of policy becomes the physical recycling of paper. Clean and drawable, if a slightly obvious mapping."
+        },
+        "spice": {
+          "score": 5,
+          "justification": "Aimed at a minister's public conduct, so the direction is right, but the sting is mild — this embarrasses rather than indicts, and no one is harmed by it."
+        },
+        "impact": {
+          "score": 4,
+          "justification": "Presentational rather than substantive. The plan's merits are untouched by the provenance of its illustrations, and nothing turns on it."
+        },
+        "shelf_life": {
+          "score": 5,
+          "justification": "Likely to fade within days absent a ministry response. Above the floor, but it is the weakest dimension here and the reason this could miss its slot."
+        },
+        "controversy": {
+          "score": 5,
+          "justification": "2,302 comments across two outlets — real engagement but roughly a third of the leading candidate's, and no cross-spectrum pickup."
+        },
+        "originality": {
+          "score": 8,
+          "justification": "No comparable gag in the ledger, and the photocopier framing has not been used by this column in the trailing 90 days."
+        },
+        "legal_risk": {
+          "score": 1,
+          "justification": "The identification of the reused renderings is verifiable by direct comparison of two published documents, and the ministry has not disputed it. Minimal exposure."
+        }
+      },
+      "weighted_total": 6.26,
+      "arithmetic": "0.20*9 + 0.15*7 + 0.15*7 + 0.12*5 + 0.12*4 + 0.10*5 + 0.10*5 + 0.06*8 - 0.20*1 = 1.80+1.05+1.05+0.60+0.48+0.50+0.50+0.48-0.20 = 6.26",
+      "verdict_summary": "Best-drawing candidate on the slate and the safest, but the lightest. Worth commissioning if the editor wants a gentler week; shelf life is the risk.",
+      "originality_conflicts": []
+    }
+  ]
+}

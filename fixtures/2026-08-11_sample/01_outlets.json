@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "stage": "outlets",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T06:02:11Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "data_basis": "mixed",
+  "notes": "Composite = 0.5*reach + 0.3*engagement + 0.2*authority. Reach is proxied from free, no-login ranking lists and a public traffic-estimate page; engagement is counted on-site by the agent — hence 'mixed'. No paid API was called and no key exists. SYNTHETIC FIXTURE DATA.",
+  "outlets": [
+    {
+      "id": "ynet",
+      "name_he": "ynet",
+      "name_en": "Ynet (Yedioth Ahronoth)",
+      "homepage": "https://www.ynet.co.il",
+      "language": "he",
+      "lean": "center",
+      "ownership": "Yedioth Ahronoth Group",
+      "paywall": "partial",
+      "robots_allowed": true,
+      "reach_score": 100,
+      "engagement_score": 94,
+      "authority_score": 95,
+      "composite_score": 97.2,
+      "rank": 1,
+      "signals": [
+        { "kind": "public_traffic_rank", "value": 3, "unit": "rank_among_israeli_domains", "observed_at": "2026-08-11T06:00:00Z", "evidence_id": "ev_rank_ynet01" },
+        { "kind": "estimated_monthly_visits", "value": 41200000, "unit": "estimated_visits_per_month", "observed_at": "2026-08-11T06:00:20Z", "evidence_id": "ev_visits_ynet01" },
+        { "kind": "talkback_volume", "value": 18422, "unit": "comments_72h", "observed_at": "2026-08-11T06:01:00Z", "evidence_id": "ev_tb_ynet01" }
+      ],
+      "feeds": [
+        { "url": "https://www.ynet.co.il/Integration/StoryRss1204.xml", "kind": "rss", "section": "politics", "verified": true }
+      ]
+    },
+    {
+      "id": "mako_n12",
+      "name_he": "mako / N12",
+      "name_en": "Mako / N12 (Channel 12)",
+      "homepage": "https://www.mako.co.il",
+      "language": "he",
+      "lean": "center",
+      "ownership": "Keshet Media Group",
+      "paywall": "none",
+      "robots_allowed": true,
+      "reach_score": 84,
+      "engagement_score": 79,
+      "authority_score": 90,
+      "composite_score": 83.7,
+      "rank": 2,
+      "signals": [
+        { "kind": "public_traffic_rank", "value": 5, "unit": "rank_among_israeli_domains", "observed_at": "2026-08-11T06:00:00Z", "evidence_id": "ev_rank_mako01" }
+      ],
+      "feeds": [
+        { "url": "https://rcs.mako.co.il/rss/news-israel.xml", "kind": "rss", "section": "israel", "verified": true }
+      ]
+    },
+    {
+      "id": "israel_hayom",
+      "name_he": "ישראל היום",
+      "name_en": "Israel Hayom",
+      "homepage": "https://www.israelhayom.co.il",
+      "language": "he",
+      "lean": "right",
+      "ownership": "Miriam Adelson",
+      "paywall": "none",
+      "robots_allowed": true,
+      "reach_score": 71,
+      "engagement_score": 66,
+      "authority_score": 88,
+      "composite_score": 72.9,
+      "rank": 3,
+      "signals": [
+        { "kind": "tgi_exposure_pct", "value": 21.8, "unit": "percent_daily_press_exposure_2025", "observed_at": "2026-08-11T06:00:30Z", "evidence_id": "ev_tgi_ih01" }
+      ],
+      "feeds": [
+        { "url": "https://www.israelhayom.co.il/rss.xml", "kind": "rss", "section": "news", "verified": true }
+      ]
+    },
+    {
+      "id": "haaretz",
+      "name_he": "הארץ",
+      "name_en": "Haaretz",
+      "homepage": "https://www.haaretz.co.il",
+      "language": "he",
+      "lean": "left",
+      "ownership": "Schocken family",
+      "paywall": "hard",
+      "robots_allowed": true,
+      "reach_score": 48,
+      "engagement_score": 55,
+      "authority_score": 78,
+      "composite_score": 56.1,
+      "rank": 4,
+      "signals": [
+        { "kind": "cross_citation", "value": 31, "unit": "citations_by_other_outlets_72h", "observed_at": "2026-08-11T06:01:30Z", "evidence_id": "ev_cc_hrz01" }
+      ],
+      "feeds": [
+        { "url": "https://www.haaretz.co.il/srv/rss---feedly", "kind": "rss", "section": "news", "verified": true }
+      ]
+    },
+    {
+      "id": "toi",
+      "name_he": "טיימס אוף ישראל",
+      "name_en": "The Times of Israel",
+      "homepage": "https://www.timesofisrael.com",
+      "language": "en",
+      "lean": "center",
+      "ownership": "Private",
+      "paywall": "none",
+      "robots_allowed": true,
+      "reach_score": 33,
+      "engagement_score": 29,
+      "authority_score": 50,
+      "composite_score": 35.2,
+      "rank": 5,
+      "signals": [
+        { "kind": "public_traffic_rank", "value": 61, "unit": "rank_among_israeli_domains", "observed_at": "2026-08-11T06:00:00Z", "evidence_id": "ev_rank_toi01" }
+      ],
+      "feeds": [
+        { "url": "https://www.timesofisrael.com/feed/", "kind": "rss", "section": "news", "verified": true }
+      ]
+    }
+  ],
+  "excluded": [
+    { "id": "kikar", "reason": "feed returned 404 and no replacement path found; recorded as a gap rather than dropped silently" }
+  ]
+}

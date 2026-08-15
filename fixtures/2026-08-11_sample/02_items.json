@@ -1,0 +1,93 @@
+{
+  "schema_version": "1.0",
+  "stage": "harvest",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T06:31:44Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "window": { "from": "2026-08-08T06:00:00Z", "to": "2026-08-11T06:00:00Z" },
+  "items": [
+    {
+      "id": "it_ynet_a1",
+      "outlet_id": "ynet",
+      "url": "https://www.ynet.co.il/news/article/fixture-a1",
+      "canonical_url": "https://www.ynet.co.il/news/article/fixture-a1",
+      "title": "ועדת הכספים אישרה את ההעברה התקציבית בשלוש לפנות בוקר",
+      "title_lang": "he",
+      "dir": "rtl",
+      "dek": "הישיבה זומנה מחדש שעה לאחר שהודיעו לחברי הוועדה שהיא בוטלה",
+      "byline": "כתב פרלמנטרי",
+      "section": "politics",
+      "published_at": "2026-08-10T04:12:00Z",
+      "fetched_at": "2026-08-11T06:20:00Z",
+      "excerpt": "ועדת הכספים אישרה הלילה ברוב של קול אחד את ההעברה התקציבית, לאחר שהישיבה זומנה מחדש בהתראה קצרה.",
+      "paywalled": false,
+      "engagement": { "comments": 4120, "shares": 880, "observed_at": "2026-08-11T06:20:00Z" },
+      "evidence_id": "ev_h_ynet_a1"
+    },
+    {
+      "id": "it_mako_a2",
+      "outlet_id": "mako_n12",
+      "url": "https://www.mako.co.il/news-israel/fixture-a2",
+      "title": "חברי ועדה: \"קיבלנו הודעת ביטול ואז גילינו שהצביעו בלעדינו\"",
+      "title_lang": "he",
+      "dir": "rtl",
+      "dek": "שלושה חברי ועדה טוענים שלא עודכנו על חידוש הישיבה",
+      "section": "israel",
+      "published_at": "2026-08-10T07:45:00Z",
+      "fetched_at": "2026-08-11T06:21:00Z",
+      "paywalled": false,
+      "engagement": { "comments": 2310, "observed_at": "2026-08-11T06:21:00Z" },
+      "evidence_id": "ev_h_mako_a2"
+    },
+    {
+      "id": "it_hrz_a3",
+      "outlet_id": "haaretz",
+      "url": "https://www.haaretz.co.il/news/politics/fixture-a3",
+      "title": "ההעברה התקציבית אושרה בישיבת לילה — מה בדיוק קרה שם",
+      "title_lang": "he",
+      "dir": "rtl",
+      "section": "politics",
+      "published_at": "2026-08-10T09:02:00Z",
+      "fetched_at": "2026-08-11T06:22:00Z",
+      "paywalled": true,
+      "evidence_id": "ev_h_hrz_a3"
+    },
+    {
+      "id": "it_toi_b1",
+      "outlet_id": "toi",
+      "url": "https://www.timesofisrael.com/fixture-b1",
+      "title": "Housing plan unveiled with renderings recycled from a 2019 announcement",
+      "title_lang": "en",
+      "dir": "ltr",
+      "dek": "Three of the five images in the ministry's presentation appeared in an earlier plan",
+      "section": "news",
+      "published_at": "2026-08-09T14:30:00Z",
+      "fetched_at": "2026-08-11T06:23:00Z",
+      "excerpt": "Three of the five architectural renderings in the ministry's presentation were previously published in a 2019 housing announcement.",
+      "paywalled": false,
+      "engagement": { "comments": 412, "observed_at": "2026-08-11T06:23:00Z" },
+      "evidence_id": "ev_h_toi_b1"
+    },
+    {
+      "id": "it_ynet_b2",
+      "outlet_id": "ynet",
+      "url": "https://www.ynet.co.il/news/article/fixture-b2",
+      "title": "התוכנית החדשה לדיור — עם ההדמיות הישנות",
+      "title_lang": "he",
+      "dir": "rtl",
+      "section": "politics",
+      "published_at": "2026-08-09T16:10:00Z",
+      "fetched_at": "2026-08-11T06:24:00Z",
+      "paywalled": false,
+      "engagement": { "comments": 1890, "shares": 640, "observed_at": "2026-08-11T06:24:00Z" },
+      "evidence_id": "ev_h_ynet_b2"
+    }
+  ],
+  "outlet_status": [
+    { "outlet_id": "ynet", "ok": true, "item_count": 2, "robots_allowed": true },
+    { "outlet_id": "mako_n12", "ok": true, "item_count": 1, "robots_allowed": true },
+    { "outlet_id": "haaretz", "ok": true, "item_count": 1, "robots_allowed": true },
+    { "outlet_id": "toi", "ok": true, "item_count": 1, "robots_allowed": true },
+    { "outlet_id": "israel_hayom", "ok": false, "item_count": 0, "robots_allowed": true, "error": "feed returned 503 on three attempts with backoff; coverage for this outlet is missing from this run" }
+  ]
+}

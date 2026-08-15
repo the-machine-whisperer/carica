@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/_defs.schema.json",
+  "title": "Shared definitions",
+  "definitions": {
+    "isoDateTime": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp. Agents must use the real observed time, never a placeholder."
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://"
+    },
+    "evidenceId": {
+      "type": "string",
+      "pattern": "^ev_[a-z0-9_-]{6,64}$",
+      "description": "Must resolve to a line in <stage>.evidence.jsonl. An unsourced number is a stage failure."
+    },
+    "score0to10": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10
+    },
+    "score0to100": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "lang": {
+      "type": "string",
+      "enum": ["he", "en", "ar", "ru", "mixed"]
+    },
+    "dir": {
+      "type": "string",
+      "enum": ["rtl", "ltr"]
+    },
+    "politicalLean": {
+      "type": "string",
+      "enum": [
+        "left",
+        "center-left",
+        "center",
+        "center-right",
+        "right",
+        "religious-right",
+        "haredi",
+        "business",
+        "state-public"
+      ]
+    },
+    "envelope": {
+      "type": "object",
+      "description": "Every stage artifact carries this header.",
+      "required": ["schema_version", "stage", "run_id", "generated_at", "agent"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "1.0" },
+        "stage": { "type": "string" },
+        "run_id": { "type": "string" },
+        "generated_at": { "$ref": "#/definitions/isoDateTime" },
+        "agent": {
+          "type": "object",
+          "required": ["model", "charter_sha"],
+          "properties": {
+            "model": { "type": "string" },
+            "charter_sha": { "type": "string" },
+            "attempt": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": true
+        }
+      }
+    },
+    "evidenceRecord": {
+      "type": "object",
+      "description": "One line of <stage>.evidence.jsonl. Either a fetch or a command — never bare assertion.",
+      "required": ["evidence_id", "kind", "observed_at", "summary"],
+      "properties": {
+        "evidence_id": { "$ref": "#/definitions/evidenceId" },
+        "kind": { "type": "string", "enum": ["fetch", "command", "api", "human"] },
+        "observed_at": { "$ref": "#/definitions/isoDateTime" },
+        "url": { "$ref": "#/definitions/url" },
+        "command": { "type": "string" },
+        "http_status": { "type": "integer" },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What this evidence establishes, in one line."
+        },
+        "excerpt": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Verbatim snippet supporting the claim. Excerpt only — never full article bodies."
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "enum": ["fetch", "api"] } } },
+          "then": { "required": ["url"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "command" } } },
+          "then": { "required": ["command"] }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

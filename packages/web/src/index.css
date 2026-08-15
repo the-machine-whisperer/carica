@@ -1,0 +1,108 @@
+@import 'tailwindcss';
+
+/*
+  A newsroom, not a dashboard. The people using this read long stretches of Hebrew and
+  English prose — justifications, claims, briefs — so the content surface is paper-light
+  and set in a serif. The chrome (rail, drawer, controls) is sans and quieter.
+*/
+@theme {
+  --color-paper: #fbfaf7;
+  --color-paper-2: #f3f1ec;
+  --color-ink: #1a1917;
+  --color-ink-2: #4a4741;
+  --color-ink-3: #7c776e;
+  --color-rule: #ddd8ce;
+  --color-accent: #7a2e2e;
+  --color-accent-2: #a34b3c;
+
+  --color-ok: #2f6b46;
+  --color-warn: #9a6b16;
+  --color-bad: #9b2c2c;
+  --color-live: #2f6b46;
+
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', 'Source Serif 4', Georgia, serif;
+  --font-sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+  Hebrew needs its own stack — the Latin serif above has no Hebrew coverage and the
+  browser fallback is usually ugly. Applied by [dir="rtl"] so it follows the data.
+*/
+[dir='rtl'] {
+  font-family: 'Noto Sans Hebrew', 'Arial Hebrew', 'Narkisim', 'David', var(--font-sans);
+  text-align: right;
+}
+
+.prose-he {
+  font-size: 1.05em;
+  line-height: 1.7;
+}
+
+/* Keep a mixed Hebrew/English line from reordering into nonsense. */
+.isolate-bidi {
+  unicode-bidi: isolate;
+}
+
+::selection {
+  background: #f0e2c8;
+}
+
+/* Focus visible everywhere — this app is operated at speed under deadline. */
+:focus-visible {
+  outline: 2px solid var(--color-accent-2);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@keyframes carica-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.live-dot {
+  animation: carica-pulse 1.6s ease-in-out infinite;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d8d3c8;
+  border-radius: 6px;
+  border: 3px solid var(--color-paper);
+}

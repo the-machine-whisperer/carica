@@ -1,0 +1,332 @@
+# Israeli outlet registry — the seed universe for S1 (outlet ranking).
+#
+# WHAT THIS FILE IS: a curated candidate list with slow-moving metadata (ownership,
+# lean, paywall posture). It is NOT the ranking. S1 ranks these at run time from live
+# signals and records evidence for every number.
+#
+# FEED URLS ARE SEEDS, NOT FACTS. Israeli outlets change feed paths without notice.
+# S1 fetches each feed and sets `verified: true` in 01_outlets.json only for feeds that
+# actually parsed. A feed that 404s becomes a recorded gap, never a silent omission.
+#
+# `authority_prior` is a slow signal (0-100) from TGI/Kantar exposure and general standing,
+# refreshed roughly annually. It is a PRIOR — live reach and engagement dominate the composite.
+
+meta:
+  market: israel
+  language_primary: he
+  refreshed: 2026-08-15
+  authority_prior_source: >
+    TGI (Target Group Index) Israel, run by Kantar Media under the Israeli Advertising
+    Association. Measures press and radio exposure, not web traffic — treat as a standing
+    prior only. 2025 wave: daily-press exposure 34.3% overall, Israel Hayom 21.8%,
+    Yedioth Ahronoth 16.1%.
+
+outlets:
+  - id: ynet
+    name_he: "ynet"
+    name_en: "Ynet (Yedioth Ahronoth)"
+    homepage: https://www.ynet.co.il
+    language: he
+    lean: center
+    ownership: "Yedioth Ahronoth Group"
+    paywall: partial
+    authority_prior: 95
+    notes: >
+      Consistently the highest-traffic Israeli news site and typically a top-3 site of any
+      kind in Israel. Talkback (comment) volume is a strong and publicly visible controversy
+      signal — one of the few Israeli outlets that exposes it cheaply.
+    feeds:
+      - url: https://www.ynet.co.il/Integration/StoryRss2.xml
+        kind: rss
+        section: news
+      - url: https://www.ynet.co.il/Integration/StoryRss1204.xml
+        kind: rss
+        section: politics
+
+  - id: mako_n12
+    name_he: "mako / N12"
+    name_en: "Mako / N12 (Channel 12, Keshet)"
+    homepage: https://www.mako.co.il
+    language: he
+    lean: center
+    ownership: "Keshet Media Group"
+    paywall: none
+    authority_prior: 90
+    notes: "Channel 12 is the highest-rated TV news brand; N12 is its web arm."
+    feeds:
+      - url: https://rcs.mako.co.il/rss/news-israel.xml
+        kind: rss
+        section: israel
+      - url: https://rcs.mako.co.il/rss/news-military.xml
+        kind: rss
+        section: security
+
+  - id: walla
+    name_he: "וואלה"
+    name_en: "Walla!"
+    homepage: https://news.walla.co.il
+    language: he
+    lean: center
+    ownership: "Communication and Digital Media (formerly Bezeq)"
+    paywall: none
+    authority_prior: 80
+    feeds:
+      - url: https://rss.walla.co.il/feed/22
+        kind: rss
+        section: news
+
+  - id: israel_hayom
+    name_he: "ישראל היום"
+    name_en: "Israel Hayom"
+    homepage: https://www.israelhayom.co.il
+    language: he
+    lean: right
+    ownership: "Miriam Adelson"
+    paywall: none
+    authority_prior: 88
+    notes: "Free daily; leads TGI print exposure. Free distribution inflates print reach relative to web traffic — do not conflate the two."
+    feeds:
+      - url: https://www.israelhayom.co.il/rss.xml
+        kind: rss
+        section: news
+
+  - id: haaretz
+    name_he: "הארץ"
+    name_en: "Haaretz"
+    homepage: https://www.haaretz.co.il
+    language: he
+    lean: left
+    ownership: "Schocken family / M. DuMont Schauberg"
+    paywall: hard
+    authority_prior: 78
+    notes: >
+      Hard paywall. Headline + dek only — never attempt full-text retrieval. Agenda-setting
+      well above its traffic share, which is why authority_prior exceeds its reach.
+    feeds:
+      - url: https://www.haaretz.co.il/srv/rss---feedly
+        kind: rss
+        section: news
+      - url: https://www.haaretz.com/srv/haaretz-latest-headlines
+        kind: rss
+        section: english
+
+  - id: maariv
+    name_he: "מעריב"
+    name_en: "Maariv"
+    homepage: https://www.maariv.co.il
+    language: he
+    lean: center-right
+    ownership: "Jerusalem Post Group / Eli Azur"
+    paywall: partial
+    authority_prior: 65
+    feeds:
+      - url: https://www.maariv.co.il/Rss/RssFeedsPolitiMedini
+        kind: rss
+        section: politics
+
+  - id: kan11
+    name_he: "כאן 11"
+    name_en: "Kan 11 (Israeli Public Broadcasting)"
+    homepage: https://www.kan.org.il
+    language: he
+    lean: state-public
+    ownership: "Israeli Public Broadcasting Corporation"
+    paywall: none
+    authority_prior: 72
+    notes: "Public broadcaster. Frequently breaks political stories; useful as a corroborating second source for S6."
+    feeds:
+      - url: https://www.kan.org.il/rss/news.xml
+        kind: rss
+        section: news
+
+  - id: reshet13
+    name_he: "חדשות 13"
+    name_en: "Channel 13 News (Reshet 13)"
+    homepage: https://13tv.co.il
+    language: he
+    lean: center
+    ownership: "Reshet Media"
+    paywall: none
+    authority_prior: 70
+    feeds:
+      - url: https://13tv.co.il/feed/
+        kind: rss
+        section: news
+
+  - id: arutz7
+    name_he: "ערוץ 7"
+    name_en: "Arutz Sheva / Israel National News"
+    homepage: https://www.inn.co.il
+    language: he
+    lean: religious-right
+    ownership: "Arutz Sheva"
+    paywall: none
+    authority_prior: 55
+    notes: "Religious-Zionist right. Essential for spectrum coverage — a candidate story that only appears here has narrow breadth, and S5 should see that."
+    feeds:
+      - url: https://www.inn.co.il/Rss.aspx
+        kind: rss
+        section: news
+
+  - id: kikar
+    name_he: "כיכר השבת"
+    name_en: "Kikar HaShabbat"
+    homepage: https://www.kikar.co.il
+    language: he
+    lean: haredi
+    ownership: "Private"
+    paywall: none
+    authority_prior: 45
+    notes: "Leading Haredi outlet. Indispensable for religion-and-state stories, which are a recurring caricature domain."
+    feeds:
+      - url: https://www.kikar.co.il/rss
+        kind: rss
+        section: news
+
+  - id: srugim
+    name_he: "סרוגים"
+    name_en: "Srugim"
+    homepage: https://www.srugim.co.il
+    language: he
+    lean: religious-right
+    ownership: "Private"
+    paywall: none
+    authority_prior: 38
+    feeds:
+      - url: https://www.srugim.co.il/feed
+        kind: rss
+        section: news
+
+  - id: globes
+    name_he: "גלובס"
+    name_en: "Globes"
+    homepage: https://www.globes.co.il
+    language: he
+    lean: business
+    ownership: "Eli Azur"
+    paywall: metered
+    authority_prior: 60
+    notes: "Business daily. Primary source for budget and economic-policy stories."
+    feeds:
+      - url: https://www.globes.co.il/webservice/rss/rssfeeder.asmx/FeederNode?iID=942
+        kind: rss
+        section: news
+
+  - id: calcalist
+    name_he: "כלכליסט"
+    name_en: "Calcalist"
+    homepage: https://www.calcalist.co.il
+    language: he
+    lean: business
+    ownership: "Yedioth Ahronoth Group"
+    paywall: metered
+    authority_prior: 62
+    notes: "Same owner as Ynet — NOT an independent second source for S6 corroboration."
+    feeds:
+      - url: https://www.calcalist.co.il/GeneralRSS/0,16335,L-8,00.xml
+        kind: rss
+        section: news
+
+  - id: zman
+    name_he: "זמן ישראל"
+    name_en: "Zman Yisrael"
+    homepage: https://www.zman.co.il
+    language: he
+    lean: center-left
+    ownership: "Times of Israel"
+    paywall: none
+    authority_prior: 40
+    feeds:
+      - url: https://www.zman.co.il/feed/
+        kind: rss
+        section: news
+
+  - id: mekomit
+    name_he: "שיחה מקומית"
+    name_en: "Local Call"
+    homepage: https://www.mekomit.co.il
+    language: he
+    lean: left
+    ownership: "Just Vision / 972 Advancement of Citizen Journalism"
+    paywall: none
+    authority_prior: 25
+    notes: "Small reach, distinct agenda. Included for spectrum, weighted low on reach."
+    feeds:
+      - url: https://www.mekomit.co.il/feed/
+        kind: rss
+        section: news
+
+  # --- English-language: lower weight for a Hebrew column, but excellent machine-readable
+  # --- sourcing and genuinely useful for S6 corroboration and for the English brief gloss.
+  - id: toi
+    name_he: "טיימס אוף ישראל"
+    name_en: "The Times of Israel"
+    homepage: https://www.timesofisrael.com
+    language: en
+    lean: center
+    ownership: "Private"
+    paywall: none
+    authority_prior: 50
+    notes: "No hard paywall and a clean full-text feed — the single best machine-readable Israeli source. Weight its REACH honestly (English audience), but lean on it for verification."
+    feeds:
+      - url: https://www.timesofisrael.com/feed/
+        kind: rss
+        section: news
+
+  - id: jpost
+    name_he: "ג'רוזלם פוסט"
+    name_en: "The Jerusalem Post"
+    homepage: https://www.jpost.com
+    language: en
+    lean: center-right
+    ownership: "Eli Azur"
+    paywall: metered
+    authority_prior: 48
+    notes: "Same owner as Maariv and Globes — not independent of them for S6."
+    feeds:
+      - url: https://www.jpost.com/rss/rssfeedsisraelnews.aspx
+        kind: rss
+        section: israel
+
+  - id: i24
+    name_he: "i24NEWS"
+    name_en: "i24NEWS"
+    homepage: https://www.i24news.tv
+    language: en
+    lean: center
+    ownership: "Patrick Drahi / Altice"
+    paywall: none
+    authority_prior: 35
+    feeds:
+      - url: https://www.i24news.tv/en/rss
+        kind: rss
+        section: news
+
+# --- Engagement signal sources (not outlets; S1 reads these to score engagement) ---
+engagement_sources:
+  - id: rotter
+    name: "Rotter.net Scoops forum"
+    url: https://rotter.net/forum/scoops1/
+    kind: forum
+    notes: >
+      A genuine Israeli political-buzz leading indicator — stories often surface here before
+      mainstream pickup. Unrepresentative and heavily skewed; use as a VELOCITY signal for
+      controversy, never as a proxy for public opinion, and never as a source for S6.
+
+  - id: telegram_public
+    name: "Public Telegram news channels"
+    kind: telegram
+    notes: >
+      Major distribution channel in Israel. Read the public web view of a public channel
+      (t.me/s/<channel>), which needs no account, no bot and no token — this pipeline has
+      no credentials. Private or invite-only channels are simply out of scope.
+
+# --- Ownership independence classes, used by S6 ---
+# S6 requires 2 INDEPENDENT sources to mark a claim verified. Outlets sharing an owner
+# do not count as independent. This encodes the Israeli media concentration that makes
+# naive "two sources" checks worthless.
+ownership_groups:
+  yedioth: [ynet, calcalist]
+  azur: [maariv, jpost, globes]
+  keshet: [mako_n12]
+  toi_group: [toi, zman]

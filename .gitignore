@@ -1,0 +1,35 @@
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Run artifacts are immutable evidence, but they are large and contain fetched
+# third-party excerpts. Keep them local by default; archive deliberately.
+# (Exclude the contents, not the directory: git will not re-include a file that
+# sits under an excluded directory, so `runs/` + `!runs/.gitkeep` silently loses.)
+runs/*
+!runs/.gitkeep
+
+# Rendered drafts
+**/10_drafts/
+
+# The history ledger is this machine's record of what the column has already
+# drawn. It is per-installation state, not source: a clone starts empty and
+# accumulates its own. The directory itself must exist, because S11 appends to
+# it and a missing directory is a stage failure.
+history/*
+!history/.gitkeep
+
+# Build output. The remote machine builds from source — `npm start` and
+# `npm run gate` both build if needed, so a committed bundle is dead weight
+# that goes stale silently.
+packages/web/dist/
+
+.DS_Store
+*.log
+
+# push.sh carries a GitHub token in plaintext. The .example template must ship,
+# because it is the documented way to recreate the script on a new machine.
+push.sh
+!push.sh.example
+HANDOVER.md

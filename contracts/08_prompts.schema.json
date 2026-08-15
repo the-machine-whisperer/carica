@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/08_prompts.schema.json",
+  "title": "S8 prompt — the prompt package handed to the graphics team. THE DELIVERABLE.",
+  "type": "object",
+  "allOf": [{ "$ref": "_defs.schema.json#/definitions/envelope" }],
+  "required": ["schema_version", "stage", "run_id", "generated_at", "agent", "packages"],
+  "properties": {
+    "schema_version": {},
+    "stage": { "const": "prompt" },
+    "run_id": {},
+    "generated_at": {},
+    "agent": {},
+    "packages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "story_id", "concept_id", "premise_he", "premise_en",
+          "image_prompt", "lettering_spec", "negative_list",
+          "captions", "alt_text_he", "alt_text_en", "sources", "verified_claims", "risk_notes"
+        ],
+        "properties": {
+          "story_id": { "type": "string" },
+          "concept_id": { "type": "string" },
+          "premise_he": { "type": "string", "minLength": 5 },
+          "premise_en": { "type": "string", "minLength": 5 },
+
+          "image_prompt": {
+            "type": "object",
+            "required": ["named_variant", "attribute_variant", "style", "aspect_ratio", "blank_plate_instruction"],
+            "properties": {
+              "named_variant": {
+                "type": "string",
+                "minLength": 120,
+                "description": "Prose scene description naming the figures. GPT image models respond to natural language, not tag soup. Public-figure satire is permitted policy-wise, but refusals remain nondeterministic."
+              },
+              "attribute_variant": {
+                "type": "string",
+                "minLength": 120,
+                "description": "Same scene, subjects identified by signature attributes without naming them. The fallback when the named variant is declined or the figure is on the opt-out list."
+              },
+              "style": {
+                "type": "object",
+                "required": ["register", "medium", "palette", "line"],
+                "properties": {
+                  "register": { "type": "string", "description": "e.g. broadsheet editorial cartoon, in the tradition of Dosh / Ze'ev / Biderman" },
+                  "medium": { "type": "string", "description": "e.g. pen-and-ink crosshatch with gouache wash" },
+                  "palette": { "type": "string" },
+                  "line": { "type": "string" },
+                  "lighting": { "type": "string" },
+                  "camera": { "type": "string", "description": "Eye level and framing — decides who reads as powerful." }
+                },
+                "additionalProperties": false
+              },
+              "aspect_ratio": { "type": "string", "pattern": "^[0-9]+:[0-9]+$" },
+              "blank_plate_instruction": {
+                "type": "string",
+                "minLength": 20,
+                "description": "MANDATORY. Instructs the renderer to leave label plates, placards and speech balloons EMPTY. Hebrew RTL renders unreliably in image models; text is set afterwards from lettering_spec."
+              }
+            },
+            "additionalProperties": false
+          },
+
+          "lettering_spec": {
+            "type": "array",
+            "description": "Hebrew text as a POST-RENDER TYPESETTING LAYER, not baked into generation. This is the difference between a usable draft and a garbled one.",
+            "items": {
+              "type": "object",
+              "required": ["text_he", "placement", "role"],
+              "properties": {
+                "text_he": { "type": "string", "minLength": 1 },
+                "text_en_gloss": { "type": "string" },
+                "placement": { "type": "string", "description": "Where in the frame, relative to the blank plate left by the renderer." },
+                "role": { "type": "string", "enum": ["label", "speech", "sign", "caption", "sfx"] },
+                "font_recommendation": { "type": "string" },
+                "size_hint": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+
+          "negative_list": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Fed directly from the editorial policy hard blocks plus concept-specific exclusions.",
+            "items": { "type": "string" }
+          },
+
+          "captions": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "required": ["text_he"],
+              "properties": {
+                "text_he": { "type": "string" },
+                "text_en_gloss": { "type": "string" },
+                "tone": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+
+          "alt_text_he": { "type": "string", "minLength": 20 },
+          "alt_text_en": { "type": "string", "minLength": 20 },
+
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["url", "outlet_id"],
+              "properties": {
+                "url": { "$ref": "_defs.schema.json#/definitions/url" },
+                "outlet_id": { "type": "string" },
+                "title": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "verified_claims": {
+            "type": "array",
+            "description": "Carried forward from S6. Only claims with status verified may appear here.",
+            "items": { "type": "string" }
+          },
+          "risk_notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "note"],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": ["defamation", "censor", "sub_judice", "trope_proximity", "opt_out_risk", "taste", "other"]
+                },
+                "note": { "type": "string" },
+                "severity": { "type": "string", "enum": ["low", "medium", "high"] }
+              },
+              "additionalProperties": false
+            }
+          },
+          "revision_of": { "type": "string", "description": "Set when this package is a REVISE loop output from S9." }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

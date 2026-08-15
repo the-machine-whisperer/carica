@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "stage": "render",
+  "run_id": "fixture",
+  "generated_at": "2026-08-11T09:22:14Z",
+  "agent": { "model": "gpt-5-codex", "charter_sha": "fixture", "attempt": 1 },
+  "renders": [
+    {
+      "story_id": "st_recycled_renders",
+      "concept_id": "cp_rr_copier",
+      "attempts": [
+        {
+          "variant": "named",
+          "status": "refused",
+          "model": "codex exec — built-in image generation",
+          "refusal_text": "I can't create images depicting this named public figure. I can help with a version that doesn't identify a specific real person.",
+          "duration_ms": 3120
+        },
+        {
+          "variant": "attribute",
+          "status": "unavailable",
+          "model": "local ComfyUI (http://127.0.0.1:8188)",
+          "error": "No renderer reachable: nothing listening on 127.0.0.1:8188 and no comfy/sd binary on PATH. Nothing was asked of any model here, so this attempt is not a refusal and says nothing about the concept — the agent fell back to the built-in tool below.",
+          "duration_ms": 214
+        },
+        {
+          "variant": "attribute",
+          "status": "ok",
+          "model": "codex exec — built-in image generation",
+          "asset_path": "10_drafts/st_recycled_renders_cp_rr_copier_1.png",
+          "duration_ms": 18740
+        },
+        {
+          "variant": "attribute",
+          "status": "ok",
+          "model": "codex exec — built-in image generation",
+          "asset_path": "10_drafts/st_recycled_renders_cp_rr_copier_2.png",
+          "duration_ms": 17980
+        }
+      ],
+      "outcome": "rendered",
+      "drafts": [
+        {
+          "asset_path": "10_drafts/st_recycled_renders_cp_rr_copier_1.png",
+          "variant": "attribute",
+          "width": 1536,
+          "height": 1024,
+          "note": "Blank banner respected. Copier streaking on the board reads clearly at column width."
+        },
+        {
+          "asset_path": "10_drafts/st_recycled_renders_cp_rr_copier_2.png",
+          "variant": "attribute",
+          "width": 1536,
+          "height": 1024,
+          "note": "Stronger silhouette but the model scrawled illegible marks into the banner despite the blank-plate instruction — graphics must clear the banner before typesetting."
+        }
+      ]
+    }
+  ]
+}

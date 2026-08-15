@@ -1,0 +1,16 @@
+{
+  "name": "@carica/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "bin": { "carica": "src/bin.js" },
+  "exports": { ".": "./src/index.js" },
+  "dependencies": {
+    "@carica/core": "*",
+    "@carica/codex": "*",
+    "@carica/pipeline": "*",
+    "@carica/server": "*",
+    "yaml": "^2.5.1"
+  }
+}

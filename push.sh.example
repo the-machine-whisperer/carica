@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────
+# push.sh — push the carica repo to its GitHub origin.
+#
+# SETUP:  cp push.sh.example push.sh   then edit push.sh and drop in your token.
+#         push.sh is gitignored, so the token NEVER lands on GitHub.
+#
+# USAGE:  ./push.sh [branch]           (branch defaults to main)
+#         Suitable for periodic pushes — it is idempotent and non-interactive.
+#
+# WHAT IT SENDS: source only. Everything a remote machine needs to run
+#         `npm install && npm start`, and nothing that belongs to this machine.
+#         `git add -A` obeys .gitignore, which excludes node_modules/, the built
+#         bundle, runs/, the history ledger, .env and this script. The guard
+#         below re-checks that independently, because .gitignore is one edit
+#         away from being wrong.
+# ─────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+# ── Config: fill these in ────────────────────────────────────────────────
+GH_TOKEN="REPLACE_WITH_GITHUB_TOKEN"    # GitHub PAT with 'repo' scope. Keep secret.
+GH_OWNER="the-machine-whisperer"        # GitHub user/org that owns the repo
+GH_REPO="carica"                        # repository name on GitHub
+BRANCH="${1:-main}"                     # branch to push (default: main)
+# ─────────────────────────────────────────────────────────────────────────
+
+# Always operate from the repo root (this script's directory).
+cd "$(dirname "$0")"
+
+if [ "$GH_TOKEN" = "REPLACE_WITH_GITHUB_TOKEN" ] || [ -z "$GH_TOKEN" ]; then
+  echo "ERROR: set GH_TOKEN in push.sh before running." >&2
+  exit 1
+fi
+
+# ── Guard: is this actually carica? ──────────────────────────────────────
+# A copy of this script once carried a hardcoded push to an unrelated project.
+# Because it does `git add -A` and pushes wherever it is told, running the wrong
+# copy in the wrong directory publishes the wrong repository. Cheap to check.
+if [ ! -f package.json ] || ! grep -q '"name": *"caricature-pipeline"' package.json; then
+  echo "ERROR: $(pwd) does not look like the carica repo (no matching package.json)." >&2
+  echo "       Refusing to push — check you are running the right copy of this script." >&2
+  exit 1
+fi
+
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "ERROR: $(pwd) is not a git repository. Run 'git init' first." >&2
+  exit 1
+fi
+
+CLEAN_URL="https://github.com/${GH_OWNER}/${GH_REPO}.git"
+# x-access-token is GitHub's conventional username for token auth over HTTPS.
+AUTH_URL="https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${GH_REPO}.git"
+
+# Keep 'origin' pointed at the token-FREE URL so the secret never lands in
+# .git/config; we authenticate only on the ephemeral push URL below.
+if git remote get-url origin >/dev/null 2>&1; then
+  git remote set-url origin "$CLEAN_URL"
+else
+  git remote add origin "$CLEAN_URL"
+fi
+
+# Stage everything .gitignore permits.
+git add -A
+
+# ── Guard: nothing machine-local, nothing secret ─────────────────────────
+# .gitignore is the mechanism; this is the check. It fails the push rather than
+# unstaging, because a file arriving here means .gitignore needs fixing and a
+# silent skip would hide that.
+BAD="$(git diff --cached --name-only | grep -E '(^|/)(node_modules|dist)/|^runs/[^.]|^history/[^.]|(^|/)\.env$|(^|/)10_drafts/|(^|/)push\.sh$' || true)"
+if [ -n "$BAD" ]; then
+  echo "ERROR: refusing to push — these are machine-local and must not be committed:" >&2
+  echo "$BAD" | sed 's/^/       /' >&2
+  echo "       Fix .gitignore, then run 'git reset' and try again." >&2
+  exit 1
+fi
+
+# A token in a tracked file is the failure this script exists to avoid.
+if git diff --cached -U0 | grep -qE '^\+.*(ghp_|github_pat_)[A-Za-z0-9_]{20,}'; then
+  echo "ERROR: refusing to push — a GitHub token appears in the staged changes." >&2
+  echo "       Find it, remove it, and revoke it before pushing." >&2
+  exit 1
+fi
+
+if git diff --cached --quiet; then
+  echo "No changes to commit."
+else
+  echo "Committing $(git diff --cached --name-only | wc -l | tr -d ' ') file(s)."
+  git commit -m "sync: ${USER:-ci} $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+fi
+
+echo "Pushing ${BRANCH} -> ${CLEAN_URL} ..."
+git push "$AUTH_URL" "HEAD:${BRANCH}"
+echo "Done: https://github.com/${GH_OWNER}/${GH_REPO} (${BRANCH})"

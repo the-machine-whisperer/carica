@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://carica.local/contracts/04_triage.schema.json",
+  "title": "S4 triage — political filter, figure identification, legal-exposure flags",
+  "type": "object",
+  "allOf": [{ "$ref": "_defs.schema.json#/definitions/envelope" }],
+  "required": ["schema_version", "stage", "run_id", "generated_at", "agent", "kept", "dropped"],
+  "properties": {
+    "schema_version": {},
+    "stage": { "const": "triage" },
+    "run_id": {},
+    "generated_at": {},
+    "agent": {},
+    "kept": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["story_id", "domains", "figures", "censor_risk", "sub_judice", "salience", "rationale"],
+        "properties": {
+          "story_id": { "type": "string" },
+          "domains": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "coalition",
+                "knesset",
+                "judicial",
+                "security_policy",
+                "budget",
+                "religion_and_state",
+                "local_government",
+                "elections",
+                "corruption",
+                "foreign_policy",
+                "civil_rights"
+              ]
+            }
+          },
+          "figures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name_he", "name_en", "role", "public_figure", "basis"],
+              "properties": {
+                "name_he": { "type": "string" },
+                "name_en": { "type": "string" },
+                "role": { "type": "string" },
+                "public_figure": {
+                  "type": "boolean",
+                  "description": "Acting in a public capacity. A false here disqualifies the story from caricature."
+                },
+                "basis": { "type": "string", "description": "Why they qualify — the office held, the public act." }
+              },
+              "additionalProperties": false
+            }
+          },
+          "censor_risk": {
+            "type": "string",
+            "enum": ["none", "possible", "likely"],
+            "description": "Israeli military censor scope. 'likely' routes to legal before any concept work."
+          },
+          "sub_judice": { "type": "boolean", "description": "Active proceedings that constrain comment." },
+          "salience": { "$ref": "_defs.schema.json#/definitions/score0to10" },
+          "rationale": { "type": "string", "minLength": 10 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "dropped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["story_id", "reason"],
+        "properties": {
+          "story_id": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "enum": ["not_political", "private_individual", "stale", "duplicate", "censor_blocked", "insufficient_sourcing"]
+          },
+          "note": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
