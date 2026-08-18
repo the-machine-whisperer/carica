@@ -12,6 +12,7 @@ import {
   activeStage,
   STAGE_ORDER,
   FIXTURES_DIR,
+  ACTIVITY_LIMIT,
 } from '../src/index.js';
 
 const SNAP = path.join(FIXTURES_DIR, '2026-08-11_sample');
@@ -98,17 +99,33 @@ describe('event projection', () => {
   const ev = (seq, type, extra = {}) => ({ seq, ts: `2026-08-11T10:00:${String(seq).padStart(2, '0')}Z`, type, ...extra });
 
   test('projects a real run log from disk', () => {
-    // Use the newest run directory produced by the replay gate, if present.
+    // Use the newest run directory produced by the replay gate, if present — which means
+    // the newest COMPLETE one. Taking the newest of all runs picks up a failed live run the
+    // moment there is one, and then asserts it completed, which it plainly did not.
     const runsDir = path.join(FIXTURES_DIR, '..', 'runs');
     if (!fs.existsSync(runsDir)) return;
-    const dirs = fs.readdirSync(runsDir).filter((d) => fs.existsSync(path.join(runsDir, d, 'events.ndjson')));
+    const dirs = fs
+      .readdirSync(runsDir)
+      .filter((d) => fs.existsSync(path.join(runsDir, d, 'events.ndjson')))
+      .filter((d) => {
+        try {
+          return JSON.parse(fs.readFileSync(path.join(runsDir, d, 'run.json'), 'utf8')).status === 'complete';
+        } catch {
+          return false;
+        }
+      });
     if (!dirs.length) return;
     const file = path.join(runsDir, dirs.sort().pop(), 'events.ndjson');
     const events = fs.readFileSync(file, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
     const state = projectRun(events);
     assert.equal(state.status, 'complete');
     for (const id of STAGE_ORDER) {
-      assert.equal(state.stages[id].status, 'ok', `${id} should have completed in the replay run`);
+      // `skipped` is a finished step too: a run started partway through carries its earlier
+      // steps over from another run rather than redoing them, and they project as skipped.
+      assert.ok(
+        ['ok', 'skipped'].includes(state.stages[id].status),
+        `${id} should have finished in the replay run, got ${state.stages[id].status}`
+      );
     }
   });
 
@@ -195,5 +212,81 @@ describe('event projection', () => {
       ev(3, 'stage.start', { stage: 'harvest' }),
     ]);
     assert.equal(activeStage(s), 'harvest');
+  });
+});
+
+describe('agent activity projection', () => {
+  const ev = (seq, type, extra = {}) => ({ seq, ts: `2026-08-11T10:00:${String(seq).padStart(2, '0')}Z`, type, ...extra });
+  const act = (seq, extra) => ev(seq, 'agent.activity', { stage: 'outlets', ...extra });
+
+  test('a command in flight is replaced by its result, not duplicated', () => {
+    const state = projectRun([
+      ev(1, 'run.start', { run_id: 'r' }),
+      ev(2, 'stage.start', { stage: 'outlets', label: 'outlets' }),
+      act(3, { kind: 'command', status: 'started', item_id: 'i1', text: 'curl ynet' }),
+      act(4, { kind: 'command', status: 'completed', item_id: 'i1', text: 'curl ynet', exit_code: 0, output: 'ok' }),
+    ]);
+    const a = state.stages.outlets.activity;
+    assert.equal(a.length, 1, 'one command happened, so one row');
+    assert.equal(a[0].status, 'completed');
+    assert.equal(a[0].exitCode, 0);
+    assert.equal(state.stages.outlets.activityCounts.command, 1);
+  });
+
+  test('counts and token usage accumulate', () => {
+    const state = projectRun([
+      ev(1, 'stage.start', { stage: 'outlets', label: 'outlets' }),
+      act(2, { kind: 'command', status: 'completed', item_id: 'i1', text: 'a' }),
+      act(3, { kind: 'search', status: 'completed', item_id: 'i2', text: 'b' }),
+      act(4, { kind: 'file', status: 'completed', item_id: 'i3', text: 'c' }),
+      act(5, { kind: 'usage', usage: { input: 100, output: 20, cached: 0, reasoning: 5 } }),
+    ]);
+    const s = state.stages.outlets;
+    assert.equal(s.activityCounts.command, 1);
+    assert.equal(s.activityCounts.search, 1);
+    assert.equal(s.activityCounts.file, 1);
+    assert.equal(s.tokens.input, 100);
+    assert.equal(s.activity.length, 3, 'usage is a total, not a row in the feed');
+  });
+
+  test('a retry clears the feed — the previous attempt is not still happening', () => {
+    const state = projectRun([
+      ev(1, 'stage.start', { stage: 'outlets', label: 'outlets' }),
+      act(2, { kind: 'command', status: 'completed', item_id: 'i1', text: 'a' }),
+      ev(3, 'agent.retry', { stage: 'outlets', attempt: 1, reason: 'contract_violation', errors: ['schema: bad'] }),
+      act(4, { kind: 'command', status: 'completed', item_id: 'i2', text: 'b' }),
+    ]);
+    const a = state.stages.outlets.activity;
+    assert.equal(a.length, 1);
+    assert.equal(a[0].text, 'b');
+  });
+
+  test('the feed is bounded, so a long stage cannot grow it without limit', () => {
+    const events = [ev(1, 'stage.start', { stage: 'outlets', label: 'outlets' })];
+    for (let i = 0; i < ACTIVITY_LIMIT + 40; i++) {
+      events.push(act(i + 2, { kind: 'command', status: 'completed', item_id: `i${i}`, text: `cmd ${i}` }));
+    }
+    const s = projectRun(events).stages.outlets;
+    assert.equal(s.activity.length, ACTIVITY_LIMIT);
+    assert.equal(s.activity[s.activity.length - 1].text, `cmd ${ACTIVITY_LIMIT + 39}`, 'the tail is what is kept');
+    assert.equal(s.activityCounts.command, ACTIVITY_LIMIT + 40, 'the count is of everything, not just the tail');
+  });
+
+  test('shard activity is folded onto the parent stage, keeping its label', () => {
+    const state = projectRun([
+      ev(1, 'stage.start', { stage: 'harvest', label: 'harvest' }),
+      ev(2, 'agent.activity', { stage: 'harvest', label: 'harvest:Ynet', kind: 'command', status: 'completed', item_id: 'i1', text: 'curl' }),
+    ]);
+    assert.equal(state.stages.harvest.activity[0].label, 'harvest:Ynet');
+  });
+
+  test('the newest move is exposed for a one-line "what now"', () => {
+    const state = projectRun([
+      ev(1, 'stage.start', { stage: 'outlets', label: 'outlets' }),
+      act(2, { kind: 'command', status: 'completed', item_id: 'i1', text: 'first' }),
+      act(3, { kind: 'search', status: 'completed', item_id: 'i2', text: 'last' }),
+    ]);
+    assert.equal(state.lastActivity.text, 'last');
+    assert.equal(state.lastActivity.stage, 'outlets');
   });
 });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
-import { listRuns } from '@carica/core';
+import { listRuns, readCheckpoint, resumePoints } from '@carica/core';
 import { runPipeline, verifyRun, STAGES } from '@carica/pipeline';
 
 const C = {
@@ -29,10 +29,18 @@ ${C.bold('USAGE')}
 ${C.bold('RUN OPTIONS')}
   --replay <dir>       Offline run from a frozen fixture snapshot. No network, no cost.
   --from <stage>       Resume from a stage, reusing artifacts that still validate.
+                       A fanned-out step resumes shard by shard: a harvest that got
+                       14 of 18 outlets re-fetches 4 and keeps the 14.
   --run <run-id>       Resume into an existing run directory (use with --from).
+  --retry-killed       On a resumed run, re-attempt the jobs somebody stopped on
+                       purpose. Off by default: a killed shard left no artifact, so
+                       every other signal says redo it, and only the control log
+                       knows a person decided otherwise.
   --slug <name>        Label for the run directory.
-  --concurrency <n>    Parallel shards for fanned-out stages (default 4).
-  --model <name>       Reasoning model (default $CARICA_CODEX_MODEL or gpt-5-codex).
+  --concurrency <n>    Parallel shards for fanned-out stages (default 8).
+  --only <a,b,c>       Harvest only these outlets (id, English or Hebrew name).
+  --seed-from <run>    Start at --from, carrying earlier results over from this run/snapshot.
+  --model <name>       Reasoning model (default $CARICA_CODEX_MODEL, else Codex's own).
   --auto-approve       Skip the human checkpoint. TESTING ONLY — never for a run that ships.
   --quiet              Only print the summary.
 
@@ -45,8 +53,14 @@ ${C.bold('BEFORE A LIVE RUN')}
 ${C.bold('EXAMPLES')}
   carica run --replay fixtures/2026-08-11_sample
   carica run --slug tuesday-column
+  carica run --only ynet,haaretz,mako_n12   ${C.dim('three outlets instead of eighteen')}
   carica run --from score --run 2026-08-15T09-00-00Z_tuesday-column
+  carica run --from harvest --run <id> --retry-killed        ${C.dim('and redo what you stopped')}
+  carica run --from cluster --seed-from 2026-08-11_sample   ${C.dim('skip the fetching')}
   carica verify --latest
+
+${C.dim('Pausing and killing individual jobs while a run is going is an interactive concern')}
+${C.dim('and lives only in the app. This CLI can start, continue and inspect a run.')}
 `;
 
 async function main() {
@@ -84,8 +98,13 @@ async function main() {
     console.log('');
     for (const r of runs) {
       const st = r.manifest?.status ?? '?';
-      const color = st === 'complete' ? C.green : st === 'failed' ? C.red : C.yellow;
-      console.log(`  ${color(st.padEnd(15))} ${r.runId}`);
+      console.log(`  ${statusColor(st)(st.padEnd(15))} ${r.runId}`);
+      // One small read per run, which is the entire reason state.json exists: answering
+      // "where could this be picked up?" from events.ndjson would mean folding a log of tens
+      // of thousands of lines, thirty times over, to print one line each. A run with no
+      // checkpoint — an older one, or one that never got going — simply says nothing here.
+      const note = [resumeHint(r.dir), r.manifest?.cancelled_reason].filter(Boolean).join(' · ');
+      if (note) console.log(`  ${' '.repeat(15)} ${C.dim(note)}`);
     }
     console.log('');
     return 0;
@@ -104,7 +123,10 @@ async function main() {
       },
       allowPositionals: false,
     });
-    const port = values.port ? Number(values.port) : 4317;
+    // 4317 is the IANA-registered OTLP/gRPC port: any machine running an OpenTelemetry
+    // collector already has it, and `carica start` would lose the race. 4318 is OTLP/HTTP
+    // and no better. 4417 is clear of both.
+    const port = values.port ? Number(values.port) : 4417;
     const host = values.host ?? '127.0.0.1';
 
     const fsMod = await import('node:fs');
@@ -164,7 +186,14 @@ async function main() {
       }
     }
     console.log('');
-    console.log(ok ? C.green('  all present artifacts satisfy their contracts\n') : C.red('  CONTRACT VIOLATIONS\n'));
+    console.log(ok ? C.green('  all present artifacts satisfy their contracts') : C.red('  CONTRACT VIOLATIONS'));
+    // Verifying a run is usually the prelude to deciding what to do about it, so the answer
+    // to "and where would it pick up?" belongs on the same screen. It comes from state.json,
+    // which is a cache: absent means nothing more than that this run predates it, or never
+    // wrote one. Nothing above depends on it.
+    const hint = resumeHint(dir);
+    if (hint) console.log(`  ${C.dim(hint)}`);
+    console.log('');
     return ok ? 0 : 1;
   }
 
@@ -177,8 +206,11 @@ async function main() {
         run: { type: 'string' },
         slug: { type: 'string' },
         concurrency: { type: 'string' },
+        only: { type: 'string' },
+        'seed-from': { type: 'string' },
         model: { type: 'string' },
         'auto-approve': { type: 'boolean' },
+        'retry-killed': { type: 'boolean' },
         quiet: { type: 'boolean' },
       },
       allowPositionals: false,
@@ -192,24 +224,29 @@ async function main() {
       resumeRunId: values.run,
       slug: values.slug,
       concurrency: values.concurrency ? Number(values.concurrency) : undefined,
+      allowlist: values.only,
+      seedFrom: values['seed-from'],
       model: values.model,
       autoApprove: values['auto-approve'],
+      retryKilled: values['retry-killed'],
       onEvent,
     });
 
     console.log('');
-    const statusLine =
-      res.status === 'complete'
-        ? C.green('complete')
-        : res.status === 'awaiting_human'
-          ? C.yellow('awaiting human approval')
-          : C.red('failed');
-    console.log(`  ${C.bold('run')} ${res.runId}  ${statusLine}`);
+    console.log(`  ${C.bold('run')} ${res.runId}  ${statusLabel(res.status)}`);
     console.log(`  ${C.dim(res.dir)}`);
+    // A cancelled run is a normal outcome — somebody pressed stop — so it says why and it
+    // exits 0. Printing it as a failure would blame the machine for an editorial decision
+    // and, in CI, would turn a deliberate stop into a broken build.
+    if (res.status === 'cancelled' && res.reason) {
+      console.log(`  ${C.dim(res.reason)}`);
+    }
     if (res.failed) {
       console.log(`\n  ${C.red(`stage ${res.failed.stage} failed:`)}`);
       for (const e of (res.failed.errors ?? []).slice(0, 10)) console.log(`    ${C.red(e)}`);
     }
+    const hint = resumeHint(res.dir);
+    if (hint && res.status !== 'complete') console.log(`\n  ${C.dim(hint)}`);
     console.log('');
     return res.status === 'failed' ? 1 : 0;
   }
@@ -217,6 +254,63 @@ async function main() {
   console.error(`unknown command: ${cmd}`);
   console.log(HELP);
   return 2;
+}
+
+/**
+ * How a run's outcome is coloured — and the one distinction that matters here.
+ *
+ * `cancelled` is not a failure. It is the machine reporting that it did exactly what a
+ * person told it to do: somebody stopped a step, or the whole run, on purpose. Painting it
+ * red says the pipeline broke, which is untrue, and buries the one useful fact — that the
+ * work is still on disk and can be picked up. Only `failed` is red.
+ */
+function statusColor(status) {
+  if (status === 'complete') return C.green;
+  if (status === 'failed') return C.red;
+  return C.yellow; // running, awaiting_human, cancelled, or a status this build has not met
+}
+
+/** The same outcome, in words rather than a status token. */
+function statusLabel(status) {
+  const words =
+    status === 'awaiting_human'
+      ? 'awaiting human approval'
+      : status === 'cancelled'
+        ? 'stopped'
+        : status;
+  return statusColor(status)(words);
+}
+
+/**
+ * Where a run could be picked up, read from its `state.json`.
+ *
+ * Cheap by construction — one small file, already written — which is the only reason this
+ * belongs in `list`, where it is done once per run. It is a CACHE and is treated as one:
+ * unreadable, absent or written by an older build all mean the same thing, which is that
+ * this run says nothing about resuming. Nothing here recomputes it from the events; that is
+ * the app's job, and it costs a fold of the whole log.
+ */
+function resumeHint(dir) {
+  const cp = readCheckpoint(dir);
+  if (!cp) return null;
+  const points = resumePoints(cp);
+  if (!points.length) return null;
+  // The step people actually want is the first one that has not finished — "the next thing
+  // to do", which deriveMilestones deliberately includes. A run with no such step is simply
+  // finished, and saying "resumable from publish" about it would be technically true and
+  // useless; what is worth knowing there is only that any of it could be re-run.
+  const next = points.find((p) => {
+    const st = cp.stages?.[p.stage]?.status;
+    return st !== 'ok' && st !== 'skipped';
+  });
+  const killed = cp.control?.killed_jobs?.length ?? 0;
+  const parts = [
+    next
+      ? `continue from ${next.stage} — carica run --from ${next.stage} --run ${cp.run_id ?? '<id>'}`
+      : `nothing left to do; any of ${points.length} steps could be re-run`,
+  ];
+  if (killed) parts.push(`${killed} job${killed === 1 ? '' : 's'} you stopped (--retry-killed to try again)`);
+  return parts.join(' · ');
 }
 
 /** Open the default browser. Best-effort: a failure here is a printed URL, not an error. */
@@ -233,6 +327,12 @@ async function openBrowser(url) {
   }
 }
 
+/** One terminal line, whatever the agent pasted into it. */
+function clipLine(s, n = 96) {
+  const t = String(s ?? '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+}
+
 function printEvent(e) {
   switch (e.type) {
     case 'run.start':
@@ -244,11 +344,32 @@ function printEvent(e) {
     case 'stage.progress':
       console.log(`    ${C.dim(e.message ?? '')}`);
       break;
+    case 'agent.spawn':
+      console.log(`    ${C.dim(`agent ${e.label ?? e.stage} attempt ${e.attempt}${e.network ? ' [net]' : ''}`)}`);
+      break;
+    case 'agent.activity': {
+      // A live stage runs for minutes. Without this the terminal shows one line and then
+      // nothing at all, which is indistinguishable from a hang.
+      if (e.kind === 'thinking') break;
+      const shard = typeof e.label === 'string' && e.label.includes(':') ? `${e.label.split(':').slice(1).join(':')} ` : '';
+      const mark =
+        e.status === 'failed' ? C.red('✕') : e.status === 'started' ? C.dim('·') : C.dim('✓');
+      const verb = { command: '$', search: '⌕', file: 'wrote', message: '»', tool: '⚙', plan: '☰' }[e.kind] ?? e.kind;
+      const tail = e.exit_code != null && e.exit_code !== 0 ? C.red(` exit ${e.exit_code}`) : '';
+      console.log(`      ${mark} ${C.dim(shard)}${C.dim(verb)} ${clipLine(e.text)}${tail}`);
+      break;
+    }
     case 'agent.retry':
       console.log(`    ${C.yellow(`retry ${e.attempt} — ${e.reason}`)}`);
       for (const err of (e.errors ?? []).slice(0, 3)) console.log(`      ${C.dim(err)}`);
       break;
     case 'artifact.write':
+      if (e.carried_over_from) {
+        console.log(
+          `  ${C.dim('↳')} ${C.dim((e.stage ?? '').padEnd(22))} ${C.dim(`${e.artifact} carried over from ${e.carried_over_from}`)}`
+        );
+        break;
+      }
       console.log(
         `    ${C.green('wrote')} ${e.artifact} ${C.dim(
           [

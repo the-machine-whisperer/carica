@@ -1,4 +1,4 @@
-import type { RunState } from '@carica/core/browser';
+import type { Checkpoint, ControlAction, RunState } from '@carica/core/browser';
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -135,7 +135,83 @@ export interface StartRunBody {
   resumeRunId?: string;
   concurrency?: number;
   model?: string;
+  /** Registry ids to harvest. Omit or leave empty for every outlet. Narrows, never adds. */
+  allowlist?: string[];
+  /**
+   * Start a NEW run at `from`, copying the steps before it out of this run or snapshot.
+   * Mutually exclusive with `resumeRunId`, which continues a run that already has them.
+   */
+  seedFrom?: string;
   requested_by?: string | null;
+}
+
+/** A run or snapshot whose results a new run could start from. */
+export interface SeedSource {
+  id: string;
+  kind: 'run' | 'fixture';
+  /** Stage ids with an artifact present, contiguous from step 1. */
+  stages: string[];
+  through: string | null;
+  artifacts: string[];
+  slug?: string | null;
+  created_at?: string | null;
+  status?: string | null;
+}
+
+// ---------------------------------------------------------------- steering a run
+
+/**
+ * The four things a person can do to work that is already under way.
+ *
+ * `pause` and `resume` are a pair and are never destructive — the job is held where it is
+ * and can be let go again. `kill` stops one piece of work for good; `skip` declines to do
+ * it at all. Both of the latter leave a recorded gap rather than a silent absence, which is
+ * the whole reason this pipeline is worth trusting: it says what it did not manage to do.
+ *
+ * Taken from core rather than restated, because the control log the server writes and the
+ * button the editor presses have to mean the same four things or the log is fiction.
+ */
+export type { ControlAction };
+
+/**
+ * What the action applies to. Deliberately one shape rather than three endpoints: "pause"
+ * means the same thing at every scale, and the server should be the one that decides how a
+ * pause of a whole run reaches the eighteen agents inside it.
+ *
+ * Looser than core's `ControlTarget`, which is a discriminated union, and on purpose: this
+ * is the type callers *build* a request with, often from a stage id they are holding in a
+ * variable. Every value of core's union satisfies this one, so nothing is lost on the way
+ * to the server — which validates it properly anyway.
+ */
+export interface ControlTarget {
+  kind: 'run' | 'stage' | 'job';
+  /** Required for `stage` and `job`. */
+  stage?: string;
+  /** Required for `job` — `"<stageId>:<shardKey>"` for a fanned-out step, the stage id otherwise. */
+  job_id?: string;
+}
+
+/**
+ * The run's own note-to-self, written as it goes.
+ *
+ * The event log is the truth about what *happened*; the checkpoint is the much smaller
+ * answer to "if this were interrupted right now, where would it pick up?". It is a file on
+ * disk in the run folder, so a run survives the app being closed — which is not a rare
+ * event in a newsroom, it is Tuesday.
+ *
+ * Re-exported from core, not restated here: the writer of that file and the reader of it
+ * have to agree down to the field, and two copies of a shape are two chances to disagree.
+ */
+export type { Checkpoint, CheckpointJob, CheckpointStage, Milestone } from '@carica/core/browser';
+
+/** One outlet as `config/outlets.he.yaml` defines it. */
+export interface RegistryOutlet {
+  id: string;
+  name_en: string;
+  name_he: string;
+  lean?: string;
+  paywall?: string;
+  authority_prior?: number;
 }
 
 export const api = {
@@ -147,7 +223,49 @@ export const api = {
 
   stopRun: (runId: string) => post<{ ok: true; run_id: string }>(`/api/runs/${encodeURIComponent(runId)}/stop`),
 
+  /**
+   * Steer a run, a step or a single job.
+   *
+   * The reply is only an acknowledgement — `request_id` is the receipt for the request, not
+   * a report that the work has stopped. What actually happened arrives over the event
+   * stream as `control.applied` and `job.killed`/`job.paused`/…, and the projection is what
+   * the screen believes. Never treat this promise resolving as the new state.
+   */
+  control: (runId: string, action: ControlAction, target: ControlTarget, by?: string | null) =>
+    post<{ ok: true; request_id: string }>(`/api/runs/${encodeURIComponent(runId)}/control`, {
+      action,
+      target,
+      ...(by ? { by } : {}),
+    }),
+
+  /** The run's resume point, or null for a run that never wrote one (an older run, or one that never started). */
+  checkpoint: (runId: string) =>
+    j<{ run_id: string; checkpoint: Checkpoint | null }>(`/api/runs/${encodeURIComponent(runId)}/checkpoint`).then(
+      (r) => r.checkpoint
+    ),
+
+  /**
+   * Carry this same run on from `from`, reusing everything before it.
+   *
+   * Distinct from `startRun({ seedFrom })`, which makes a *new* run that copies the earlier
+   * steps in. This one keeps the run id, so the record stays one continuous story.
+   *
+   * `retryKilled` is the editor's answer to "and the jobs you stopped?". Omitted or false —
+   * the default, and the right one — they stay stopped: a killed shard wrote no artifact, so
+   * every other signal a resume can read says it still needs doing, and only the control log
+   * knows a person decided otherwise. Sending true is the explicit "I stopped that by
+   * mistake, try it again", and it has to travel with the request or the choice the editor
+   * made on screen is quietly discarded on the way to the server.
+   */
+  resumeRun: (runId: string, from: string, opts?: { retryKilled?: boolean }) =>
+    post<{ ok: true; run_id: string; resumed: boolean }>(`/api/runs/${encodeURIComponent(runId)}/resume`, {
+      from,
+      ...(opts?.retryKilled ? { retryKilled: true } : {}),
+    }),
+
   active: () => j<{ active: ActiveRun | null }>('/api/active'),
+
+  seedSources: () => j<{ sources: SeedSource[] }>('/api/seed-sources').then((r) => r.sources),
 
   verify: (runId: string) =>
     j<{ ok: boolean; rows: { stage: string; present: boolean; ok: boolean | null; errors: string[]; evidence: { records: number; refs: number } | null }[] }>(

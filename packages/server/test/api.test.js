@@ -11,9 +11,16 @@ let runId;
 let runDir;
 
 before(async () => {
+  // The NEWEST run is the wrong fixture: the moment a live run fails, it becomes the newest
+  // one and every assertion below (which expects a complete run with all eleven artifacts)
+  // fails for reasons that have nothing to do with the server. That turns `npm run gate`
+  // red exactly when a failed run is what you are trying to investigate. Take the newest
+  // COMPLETE run instead.
   const runs = listRuns();
   assert.ok(runs.length, 'these tests need at least one run — run `npm run gate:phase0` first');
-  runId = runs[0].runId;
+  const complete = runs.find((r) => r.manifest?.status === 'complete');
+  assert.ok(complete, 'these tests need at least one complete run — run `npm run gate:phase0` first');
+  runId = complete.runId;
   runDir = path.join(RUNS_DIR, runId);
 
   app = await buildServer();

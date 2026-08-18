@@ -15,8 +15,12 @@ import {
   projectRun,
   readLedger,
   LEDGER_PATH,
+  readControl,
+  controlState,
+  readCheckpoint,
+  deriveCheckpoint,
 } from '@carica/core';
-import { stageGraph, verifyRun } from '@carica/pipeline';
+import { stageGraph, verifyRun, STAGES } from '@carica/pipeline';
 import { createRunManager, listFixtures, RunError } from './run-manager.js';
 import { systemStatus, settingsView, writeEnvFile, readWeightsDoc, writeWeights, policyStatus } from './setup.js';
 
@@ -34,6 +38,57 @@ function runDirFor(runId) {
   if (!id) return null;
   const dir = path.join(RUNS_DIR, id);
   return fs.existsSync(dir) ? dir : null;
+}
+
+/**
+ * Stage numbers and titles, for the checkpoint deriver.
+ *
+ * core cannot import them — pipeline imports core, and reversing that is a cycle — so the
+ * one source of truth is handed down rather than duplicated. Computed once: the graph is
+ * a constant, and a resume picker should not rebuild it on every poll.
+ */
+const STAGE_META = Object.fromEntries(stageGraph().map((s) => [s.id, { n: s.n, title: s.title }]));
+const STAGE_IDS = new Set(STAGES.map((s) => s.id));
+
+/**
+ * Where a run would pick up if it were continued.
+ *
+ * `state.json` is a cache the pipeline writes as it goes, so it is preferred — it is one
+ * small read instead of a fold over a log that can run to tens of thousands of lines. But
+ * it is only a cache: every run made before it existed has none, and a run interrupted
+ * mid-write can have half of one. Both fall back to deriving the same answer from the
+ * events, which is the actual evidence. An old run is exactly as resumable as a new one;
+ * its artifacts are on disk either way, and this must never be the reason it is not.
+ *
+ * Returns null only when there is genuinely nothing to say — a run directory with no
+ * events at all — never because something was unreadable.
+ */
+function checkpointFor(dir) {
+  const cached = readCheckpoint(dir);
+  // A checkpoint with no stages is a torn or hand-edited one, whatever it parsed as.
+  if (cached && cached.stages && typeof cached.stages === 'object') return cached;
+
+  try {
+    const events = readEvents(path.join(dir, 'events.ndjson'));
+    if (!events.length) return null;
+    let manifest = null;
+    try {
+      manifest = readJson(path.join(dir, 'run.json'));
+    } catch {
+      /* a run without a readable manifest still has its events */
+    }
+    return deriveCheckpoint(events, { stageMeta: STAGE_META, manifest });
+  } catch {
+    // Degrade, never 500. "I cannot tell you where this run stands" is a usable answer;
+    // a crash on the run screen is not.
+    return null;
+  }
+}
+
+/** What has been asked of a run, and what those requests add up to once folded. */
+function controlFor(dir) {
+  const records = readControl(dir);
+  return { records, state: controlState(records) };
 }
 
 export async function buildServer(opts = {}) {
@@ -159,11 +214,135 @@ export async function buildServer(opts = {}) {
     }
   });
 
+  /**
+   * Where a new run could take its earlier results from, and how far each source gets you.
+   *
+   * `through` is the last step whose artifact is present, so the browser can offer exactly
+   * the steps a source can actually start you at and no others. Presence only — validating
+   * every artifact of every run on every dialog open would be slow, and the pipeline
+   * re-checks each one against its contract before it uses it anyway.
+   */
+  app.get('/api/seed-sources', async () => {
+    const artifactOf = Object.fromEntries(STAGES.map((s) => [s.id, s.artifact]));
+    const describe = (name, dir, kind, extra = {}) => {
+      const present = STAGES.filter((s) => fs.existsSync(path.join(dir, s.artifact))).map((s) => s.id);
+      // Contiguous from the first step: a gap means you cannot start after it.
+      const contiguous = [];
+      for (const s of STAGES) {
+        if (!present.includes(s.id)) break;
+        contiguous.push(s.id);
+      }
+      return {
+        id: name,
+        kind,
+        stages: contiguous,
+        through: contiguous.length ? contiguous[contiguous.length - 1] : null,
+        artifacts: contiguous.map((id) => artifactOf[id]),
+        ...extra,
+      };
+    };
+
+    const runs = listRuns()
+      .map((r) => describe(r.runId, r.dir, 'run', { slug: r.manifest?.slug ?? null, created_at: r.manifest?.created_at ?? null, status: r.manifest?.status ?? null }))
+      .filter((r) => r.stages.length);
+    const fixtures = listFixtures().map((f) => describe(f.name, f.path, 'fixture')).filter((f) => f.stages.length);
+
+    return { sources: [...runs, ...fixtures] };
+  });
+
   app.get('/api/active', async () => ({ active: runner.getActive() }));
 
   app.post('/api/runs/:runId/stop', async (req, reply) => {
     try {
       return runner.stop(req.params.runId);
+    } catch (err) {
+      return fail(reply, err);
+    }
+  });
+
+  // ------------------------------------------------- steering a run in flight
+  //
+  // Stopping a run is the blunt instrument: everything ends. These are the rest of the
+  // verbs — pause the whole thing, hold one step, kill or skip a single job — and they
+  // exist because a run is eighteen agents wide and one of them going wrong is not a
+  // reason to throw away the other seventeen.
+  //
+  // Every one of them is written to control.ndjson before anything else happens, so what
+  // an editor asked for is on disk whether or not a process was there to hear it.
+
+  /**
+   * Ask a run to pause, resume, kill or skip.
+   *
+   * The reply is a receipt, not a result: `request_id` identifies the instruction, and
+   * `delivered` says only whether the live process was told about it directly. What
+   * actually happened to the work arrives on the event stream, from the process that did
+   * it. A 200 here never means "it has stopped".
+   */
+  app.post('/api/runs/:runId/control', async (req, reply) => {
+    const dir = runDirFor(req.params.runId);
+    if (!dir) return reply.code(404).send({ error: 'no such run' });
+    const body = req.body ?? {};
+    try {
+      return runner.control(req.params.runId, {
+        action: body.action,
+        target: body.target,
+        by: body.by ?? null,
+      });
+    } catch (err) {
+      return fail(reply, err);
+    }
+  });
+
+  /**
+   * Everything that has been asked of this run, and who asked for it.
+   *
+   * Cheap, and worth having on its own: the control log is the only place that records an
+   * intention which was never carried out — the shard an editor killed a second after it
+   * finished anyway. The event log cannot show that, because it did not happen. This is
+   * what makes a decision auditable rather than merely effective.
+   */
+  app.get('/api/runs/:runId/control', async (req, reply) => {
+    const dir = runDirFor(req.params.runId);
+    if (!dir) return reply.code(404).send({ error: 'no such run' });
+    return controlFor(dir);
+  });
+
+  /** Where this run would pick up if it were continued. */
+  app.get('/api/runs/:runId/checkpoint', async (req, reply) => {
+    const dir = runDirFor(req.params.runId);
+    if (!dir) return reply.code(404).send({ error: 'no such run' });
+    return { run_id: req.params.runId, checkpoint: checkpointFor(dir) };
+  });
+
+  /**
+   * Carry this run on from `from`, in its own directory, under its own id.
+   *
+   * Different from starting a new run that borrows an old one's artifacts (`seedFrom`):
+   * this one keeps the run id, so the record stays a single continuous story rather than
+   * two runs somebody has to correlate later.
+   */
+  app.post('/api/runs/:runId/resume', async (req, reply) => {
+    const dir = runDirFor(req.params.runId);
+    if (!dir) return reply.code(404).send({ error: 'no such run' });
+
+    const from = req.body?.from;
+    if (typeof from !== 'string' || !from.trim()) {
+      return reply.code(400).send({ error: 'Continuing a run needs a step to continue from.' });
+    }
+    if (!STAGE_IDS.has(from)) {
+      // Named in full, because the person reading this is choosing a step, not debugging.
+      return reply.code(400).send({
+        error: `There is no step called “${from}”. Continue from one of: ${STAGES.map((s) => s.id).join(', ')}.`,
+      });
+    }
+
+    try {
+      const started = await runner.resume(
+        req.params.runId,
+        { from, retryKilled: req.body?.retryKilled },
+        { requestedBy: req.body?.requested_by ?? null }
+      );
+      return { ok: true, run_id: started.runId, resumed: true };
     } catch (err) {
       return fail(reply, err);
     }
@@ -201,6 +380,10 @@ export async function buildServer(opts = {}) {
       /* a run without a manifest is still viewable */
     }
 
+    // The resume point and the standing instructions ride along with the poll the run
+    // screen already makes. Both are small — a couple of dozen lines of JSON — and the
+    // alternative is three requests for one screen, each arriving at a slightly different
+    // moment, which is how a UI ends up drawing a paused run with a running spinner.
     return {
       run_id: req.params.runId,
       manifest,
@@ -209,6 +392,8 @@ export async function buildServer(opts = {}) {
       active: runner.isActive(req.params.runId),
       interrupted: manifest?.status === 'running' && !runner.isActive(req.params.runId),
       policy: policyStatus(),
+      checkpoint: checkpointFor(dir),
+      control: controlFor(dir),
     };
   });
 
@@ -371,7 +556,7 @@ export async function buildServer(opts = {}) {
   return app;
 }
 
-export async function startServer({ port = 4317, host = '127.0.0.1', logger = false } = {}) {
+export async function startServer({ port = 4417, host = '127.0.0.1', logger = false } = {}) {
   const app = await buildServer({ logger });
   await app.listen({ port, host });
   return app;

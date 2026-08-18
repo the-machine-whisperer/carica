@@ -121,11 +121,35 @@ export function codexBin(bin) {
  * return JSON in a chat message. That keeps large outputs off the stdout path
  * entirely and means we validate a real file, not a parse of a transcript.
  *
+ * ADDRESSABILITY. A run is a thing an editor watches, and watching without being able to
+ * intervene is a spectator sport. Three additions make a spawned agent reachable, none of
+ * which change what a normal, uninterrupted call does:
+ *
+ *   - `onSpawn(child, controls)` fires synchronously the instant the process exists, so a
+ *     job registry can record the pid before the first line of output arrives. `controls`
+ *     carries `pauseTimer` / `resumeTimer` / `markKilled` (see below).
+ *   - `abort` — any object with an `aborted` boolean (a getter is fine) — is checked BEFORE
+ *     spawning. A job the editor killed while it was queued must not be started at all.
+ *   - the resolved shape gains `killed` / `killReason`, because "the editor stopped this",
+ *     "it ran out of time" and "it exited non-zero" are three different things that owe the
+ *     operator three different sentences.
+ *
+ * THE TIMEOUT AND PAUSE. `timeoutMs` exists to catch an agent that has hung, and a paused
+ * agent has not hung — it was SIGSTOPped on purpose by someone who intends to come back. So
+ * the timer is not a fixed deadline from spawn: it is a budget of *running* time. Pausing
+ * banks whatever is left of it and resuming re-arms exactly that much, which means a job
+ * suspended over lunch resumes with all the time it started with and a genuinely stuck agent
+ * is still stopped after its fifteen minutes of actually running.
+ *
  * @param {{prompt: string, cwd: string, model?: string, network?: boolean,
  *          writableRoots?: string[], timeoutMs?: number,
  *          onLine?: (line: string, parsed: any|null) => void,
+ *          onStderr?: (chunk: string) => void,
+ *          onSpawn?: (child: any, controls: {pauseTimer: () => void, resumeTimer: () => void, markKilled: (reason?: string) => void}) => void,
+ *          abort?: {aborted: boolean, reason?: string},
  *          bin?: string, env?: Record<string,string>}} o
- * @returns {Promise<{code: number|null, stdout: string, stderr: string, timedOut: boolean}>}
+ * @returns {Promise<{code: number|null, stdout: string, stderr: string, timedOut: boolean,
+ *                    killed: boolean, killReason: string|null, spawned: boolean}>}
  */
 export function runCodex(o) {
   const bin = codexBin(o.bin);
@@ -135,6 +159,23 @@ export function runCodex(o) {
     let stdout = '';
     let stderr = '';
     let timedOut = false;
+    let killed = false;
+    let killReason = null;
+
+    // Killed while queued: never spawn it. Starting an agent the editor has already stopped
+    // would burn tokens on work nobody wants and then have to be killed anyway.
+    if (o.abort?.aborted) {
+      resolve({
+        code: null,
+        stdout,
+        stderr,
+        timedOut: false,
+        killed: true,
+        killReason: o.abort.reason ?? 'stopped by the editor before it started',
+        spawned: false,
+      });
+      return;
+    }
 
     const child = spawn(bin, args, {
       cwd: o.cwd,
@@ -142,13 +183,62 @@ export function runCodex(o) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
-    const timer = o.timeoutMs
-      ? setTimeout(() => {
-          timedOut = true;
-          child.kill('SIGTERM');
-          setTimeout(() => child.kill('SIGKILL'), 5000).unref();
-        }, o.timeoutMs)
-      : null;
+    // ---- the running-time budget (see the note about pause, above) ----
+    let timer = null;
+    let remainingMs = o.timeoutMs ?? 0;
+    let armedAt = 0;
+
+    const expire = () => {
+      timer = null;
+      remainingMs = 0;
+      timedOut = true;
+      try {
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          try {
+            child.kill('SIGKILL');
+          } catch {
+            /* already gone */
+          }
+        }, 5000).unref();
+      } catch {
+        /* already gone */
+      }
+    };
+
+    const armTimer = () => {
+      if (timer || remainingMs <= 0) return;
+      armedAt = Date.now();
+      timer = setTimeout(expire, remainingMs);
+    };
+    const disarmTimer = (bank) => {
+      if (!timer) return;
+      clearTimeout(timer);
+      timer = null;
+      if (bank) remainingMs = Math.max(1, remainingMs - (Date.now() - armedAt));
+    };
+
+    const controls = {
+      /** The job was suspended; stop the clock rather than call the pause a timeout. */
+      pauseTimer: () => disarmTimer(true),
+      resumeTimer: () => armTimer(),
+      /** Somebody outside is about to signal this child on purpose. Record why. */
+      markKilled: (reason) => {
+        killed = true;
+        killReason = reason ?? 'stopped by the editor';
+        disarmTimer(false);
+      },
+    };
+
+    armTimer();
+
+    // Synchronous, before any output: the registry must be able to address this pid from
+    // the moment it exists, not from the moment it first says something.
+    try {
+      o.onSpawn?.(child, controls);
+    } catch {
+      /* a registry that throws must not sink the agent it was registering */
+    }
 
     let buf = '';
     child.stdout.on('data', (chunk) => {
@@ -171,17 +261,34 @@ export function runCodex(o) {
     });
 
     child.stderr.on('data', (c) => {
-      stderr += c.toString();
+      const text = c.toString();
+      stderr += text;
+      o.onStderr?.(text);
     });
 
     child.on('error', (err) => {
-      if (timer) clearTimeout(timer);
-      resolve({ code: null, stdout, stderr: stderr + `\nspawn error: ${err.message}`, timedOut });
+      disarmTimer(false);
+      resolve({
+        code: null,
+        stdout,
+        stderr: stderr + `\nspawn error: ${err.message}`,
+        timedOut,
+        killed,
+        killReason,
+        spawned: true,
+      });
     });
 
-    child.on('close', (code) => {
-      if (timer) clearTimeout(timer);
-      resolve({ code, stdout, stderr, timedOut });
+    child.on('close', (code, signal) => {
+      disarmTimer(false);
+      // A child that died from a signal we did not schedule was killed by somebody —
+      // the registry, an operator with `kill`, a supervisor. Say so honestly instead of
+      // reporting it as a mysterious non-zero exit, which is what it would look like.
+      if (!timedOut && !killed && signal) {
+        killed = true;
+        killReason = `the agent process was terminated (${signal})`;
+      }
+      resolve({ code, stdout, stderr, timedOut, killed, killReason, spawned: true });
     });
   });
 }

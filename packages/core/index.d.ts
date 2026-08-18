@@ -8,6 +8,8 @@
 
 export * from './browser.js';
 
+import type { Checkpoint, ControlAction, ControlRecord, ControlTarget } from './browser.js';
+
 export interface RunManifest {
   run_id: string;
   created_at: string;
@@ -61,6 +63,27 @@ export declare function tailEvents(
   intervalMs?: number
 ): () => void;
 export declare function readEvents(file: string, afterSeq?: number): any[];
+
+/**
+ * The control channel: what the editor says to a run, as opposed to what the run says about
+ * itself. Append-only NDJSON at <runDir>/control.ndjson.
+ */
+export declare function appendControl(
+  runDir: string,
+  input: { action: ControlAction; target: ControlTarget; by?: string | null; request_id?: string }
+): ControlRecord;
+export declare function readControl(runDir: string, afterSeq?: number): ControlRecord[];
+export declare function tailControl(
+  runDir: string,
+  fromSeq: number,
+  onRecord: (r: ControlRecord) => void,
+  intervalMs?: number
+): () => void;
+export declare function controlPath(runDir: string): string;
+
+/** state.json — a cache of the projection. If it disagrees with the events, the events win. */
+export declare function writeCheckpoint(runDir: string, checkpoint: Checkpoint): string;
+export declare function readCheckpoint(runDir: string): Checkpoint | null;
 
 export declare function validateArtifact(
   contractFile: string,

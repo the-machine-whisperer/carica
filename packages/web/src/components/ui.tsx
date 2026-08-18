@@ -314,6 +314,12 @@ export function Explain({ term, children }: { term: keyof typeof GLOSSARY | stri
  * A modal dialog. Focus moves in, Escape closes, the background scrolls no further —
  * the parts people notice only when they are missing.
  */
+/**
+ * Open modals, innermost last. A modal opened from inside another (choosing sources while
+ * setting a run up) must be the only one that Escape closes and the only one on top.
+ */
+const MODAL_STACK: symbol[] = [];
+
 export function Modal({
   title,
   description,
@@ -331,10 +337,29 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const me = useRef<symbol>(null as unknown as symbol);
+  if (me.current == null) me.current = Symbol('modal');
+  const [depth, setDepth] = useState(0);
+
+  // Join the stack on mount, leave on unmount — NOT on every onClose change, or a modal
+  // would enter the stack twice and the one on top would stop being identifiable.
+  useEffect(() => {
+    const self = me.current;
+    MODAL_STACK.push(self);
+    setDepth(MODAL_STACK.length - 1);
+    return () => {
+      const i = MODAL_STACK.indexOf(self);
+      if (i !== -1) MODAL_STACK.splice(i, 1);
+    };
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      // Only the topmost modal answers Escape. Without this, a modal opened from inside
+      // another closes both, and the editor loses the settings they were part way through.
+      if (e.key !== 'Escape') return;
+      if (MODAL_STACK[MODAL_STACK.length - 1] !== me.current) return;
+      onClose();
     };
     document.addEventListener('keydown', onKey);
     const first = ref.current?.querySelector<HTMLElement>(
@@ -346,7 +371,8 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-[#1a1917]/35 p-4 pt-[8vh]"
+      style={{ zIndex: 40 + depth * 10 }}
+      className="fixed inset-0 flex items-start justify-center overflow-y-auto bg-[#1a1917]/35 p-4 pt-[8vh]"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

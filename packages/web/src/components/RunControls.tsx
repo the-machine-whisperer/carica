@@ -1,40 +1,52 @@
 import { useEffect, useState } from 'react';
 import type { RunState } from '@carica/core/browser';
 import { api, type RunSummary, type StageInfo, type SystemStatus } from '../lib/api';
-import { STAGE_META } from '../lib/copy';
+import { CONTROL_COPY, STAGE_META } from '../lib/copy';
 import { Badge, Button, Loading, Modal } from './ui';
 import { useToast } from './Toast';
 import { RunDialog } from './RunDialog';
 
 /**
- * What you can do to a run: stop it, carry it on from where it stopped, run it again,
- * and audit what it produced.
+ * What you can do to a run: hold it, stop it, carry it on from where it stopped, run it
+ * again, and audit what it produced.
  *
  * Which of these appear depends on the run's state, because a control that is present but
  * meaningless is worse than one that is absent — it invites a click that does nothing.
+ *
+ * The load-bearing distinction here is **Pause is not Stop**. Pause suspends the agents and
+ * keeps them alive, so Resume carries on from the same place; Stop ends the run and shuts
+ * them down. Both are twenty minutes of work apart, so neither is an icon: each is a word,
+ * with the consequence written on it.
  */
 export function RunControls({
   run,
   state,
   active,
   interrupted,
+  paused = false,
   system,
   stages,
   onOpenRun,
   onChanged,
+  onResume,
 }: {
   run: RunSummary | null;
   state: RunState;
   active: boolean;
   interrupted: boolean;
+  /** The run is held where it is: the agents are alive, nothing new is starting. */
+  paused?: boolean;
   system: SystemStatus | null;
   stages: StageInfo[];
   onOpenRun: (runId: string) => void;
   onChanged: () => void;
+  /** Open the milestone picker for this run, at the step that looks like the right one. */
+  onResume?: (suggestedStage: string | null) => void;
 }) {
   const toast = useToast();
   const [stopping, setStopping] = useState(false);
-  const [dialog, setDialog] = useState<null | 'continue' | 'again'>(null);
+  const [holding, setHolding] = useState(false);
+  const [dialog, setDialog] = useState<null | 'again'>(null);
   const [audit, setAudit] = useState(false);
 
   if (!run) return null;
@@ -47,7 +59,7 @@ export function RunControls({
     setStopping(true);
     try {
       await api.stopRun(run!.run_id);
-      toast('Stopping after the current step finishes writing.', 'info');
+      toast(CONTROL_COPY.stop.ack, 'info');
       onChanged();
     } catch (e: any) {
       toast(String(e?.message ?? e), 'bad');
@@ -56,17 +68,53 @@ export function RunControls({
     }
   }
 
+  /**
+   * Hold the whole run, or let it go again.
+   *
+   * The reply is only a receipt. What the run is actually doing arrives over the event
+   * stream and is read off the projection — this never sets a paused flag of its own.
+   */
+  async function hold(action: 'pause' | 'resume') {
+    setHolding(true);
+    try {
+      await api.control(run!.run_id, action, { kind: 'run' });
+      toast(CONTROL_COPY[action].ack, 'info');
+      onChanged();
+    } catch (e: any) {
+      toast(String(e?.message ?? e), 'bad');
+    } finally {
+      setHolding(false);
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {stoppable && (
-        <Button size="sm" variant="danger" onClick={stop} busy={stopping}>
-          Stop run
+      {stoppable && !paused && (
+        <Button size="sm" onClick={() => hold('pause')} busy={holding} title={CONTROL_COPY.pause.hint}>
+          {CONTROL_COPY.pause.label}
         </Button>
       )}
 
-      {!active && unfinished && (
-        <Button size="sm" variant="primary" onClick={() => setDialog('continue')}>
-          Continue{suggested ? ` from ${STAGE_META[suggested]?.title ?? suggested}` : ''}
+      {stoppable && paused && (
+        <Button size="sm" variant="primary" onClick={() => hold('resume')} busy={holding} title={CONTROL_COPY.resume.hint}>
+          {CONTROL_COPY.resume.label}
+        </Button>
+      )}
+
+      {stoppable && (
+        <Button size="sm" variant="danger" onClick={stop} busy={stopping} title={CONTROL_COPY.stop.hint}>
+          {CONTROL_COPY.stop.label}
+        </Button>
+      )}
+
+      {!active && (unfinished || state.status === 'complete') && onResume && (
+        <Button
+          size="sm"
+          variant={unfinished ? 'primary' : 'secondary'}
+          onClick={() => onResume(suggested)}
+          title="Everything this run finished is still on disk. Pick the step it should pick up from."
+        >
+          Carry on{unfinished && suggested ? ` from ${STAGE_META[suggested]?.title ?? suggested}` : ' from…'}
         </Button>
       )}
 
@@ -90,7 +138,6 @@ export function RunControls({
             onChanged();
             onOpenRun(id);
           }}
-          continueRun={dialog === 'continue' ? { run, suggestedStage: suggested } : undefined}
         />
       )}
 

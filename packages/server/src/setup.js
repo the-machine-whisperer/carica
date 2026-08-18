@@ -36,8 +36,8 @@ const WEB_DIST = path.join(REPO_ROOT, 'packages', 'web', 'dist');
  * screen would promise the editor a choice the step does not take.
  */
 export const EDITABLE_KEYS = [
-  { key: 'CARICA_CODEX_MODEL', label: 'Reasoning model', required: false, default: 'gpt-5-codex',
-    help: 'The model the thinking steps ask Codex for. Leave as it is unless you have been told otherwise.' },
+  { key: 'CARICA_CODEX_MODEL', label: 'Reasoning model', required: false, default: '',
+    help: 'Leave blank — Codex then uses the model your sign-in actually has. Only name one if you have been told to, and only one your account is entitled to: a model it cannot use fails every step of a live run with a 400.' },
   { key: 'CARICA_CODEX_BIN', label: 'Path to the Codex command', required: false,
     help: 'Only needed if the Codex CLI is installed somewhere unusual.' },
 ];

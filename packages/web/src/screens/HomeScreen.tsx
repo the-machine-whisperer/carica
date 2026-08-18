@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import type { ActiveRun, RunSummary, SystemStatus } from '../lib/api';
-import { RUN_STATUS, STAGE_META } from '../lib/copy';
+import { RESUME_COPY, RUN_STATUS, STAGE_META } from '../lib/copy';
 import { Badge, Button, Card, Explain, Progress, StatusDot } from '../components/ui';
+import { ResumePanel } from '../components/ResumePanel';
 import { clock, duration, when } from '../lib/format';
 
 /**
@@ -29,6 +31,8 @@ export function HomeScreen({
   onStop: (runId: string) => void;
   onSetup: () => void;
 }) {
+  /** The run whose milestone picker is open, if any. A list, not a dashboard: one modal, no state. */
+  const [resuming, setResuming] = useState<RunSummary | null>(null);
   const awaiting = runs.filter((r) => r.status === 'awaiting_human');
   const activeRun = active?.run_id ? runs.find((r) => r.run_id === active.run_id) : null;
   const warnings = (system?.checks ?? []).filter((c) => c.state !== 'ok');
@@ -151,16 +155,34 @@ export function HomeScreen({
         ) : (
           <ul className="space-y-2">
             {runs.map((r) => (
-              <RunRow key={r.run_id} run={r} onOpen={() => onOpenRun(r.run_id)} />
+              <RunRow
+                key={r.run_id}
+                run={r}
+                onOpen={() => onOpenRun(r.run_id)}
+                onResume={r.run_id === active?.run_id ? undefined : () => setResuming(r)}
+              />
             ))}
           </ul>
         )}
       </section>
+
+      {resuming && (
+        <ResumePanel
+          runId={resuming.run_id}
+          slug={resuming.slug}
+          stageSummary={resuming.stage_summary}
+          onClose={() => setResuming(null)}
+          onResumed={(id) => {
+            setResuming(null);
+            onOpenRun(id);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function RunRow({ run, onOpen }: { run: RunSummary; onOpen: () => void }) {
+function RunRow({ run, onOpen, onResume }: { run: RunSummary; onOpen: () => void; onResume?: () => void }) {
   const statusKey = run.interrupted ? 'interrupted' : run.status;
   const status = RUN_STATUS[statusKey] ?? RUN_STATUS.unknown;
   const done = (run.stage_summary ?? []).filter((s) => s.ok).length;
@@ -169,14 +191,13 @@ function RunRow({ run, onOpen }: { run: RunSummary; onOpen: () => void }) {
     run.created_at && run.finished_at
       ? duration(new Date(run.finished_at).getTime() - new Date(run.created_at).getTime())
       : null;
+  // A run that stopped part way is not a dead end: everything it finished is on disk, and
+  // the offer to carry it on belongs here, next to the badge that says it stopped.
+  const stoppedPartWay = ['failed', 'cancelled'].includes(run.status) || !!run.interrupted;
 
   return (
-    <li>
-      <button
-        type="button"
-        onClick={onOpen}
-        className="group flex w-full items-center gap-4 rounded-md border border-(--color-rule) bg-white/70 px-4 py-3 text-start hover:border-(--color-ink-3)/40 hover:bg-white"
-      >
+    <li className="group flex items-center gap-2 rounded-md border border-(--color-rule) bg-white/70 pe-3 hover:border-(--color-ink-3)/40 hover:bg-white">
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3 text-start">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="font-serif text-[15px] text-(--color-ink)">{run.slug ?? run.run_id}</span>
@@ -200,6 +221,17 @@ function RunRow({ run, onOpen }: { run: RunSummary; onOpen: () => void }) {
         </div>
         <span className="text-[13px] text-(--color-ink-3) group-hover:text-(--color-accent-2)">Open →</span>
       </button>
+
+      {stoppedPartWay && onResume && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onResume}
+          title="Everything this run finished is still on disk. Pick the step it should pick up from."
+        >
+          {RESUME_COPY.homeAction}
+        </Button>
+      )}
     </li>
   );
 }

@@ -27,7 +27,7 @@ if [ ! -d node_modules ]; then
   fi
 fi
 
-printf '  Opening http://127.0.0.1:4317 — leave this window open.\n'
+printf '  Opening http://127.0.0.1:4417 — leave this window open.\n'
 printf '  Press control-C here when you are finished.\n\n'
 
 exec npm start

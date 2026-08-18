@@ -11,6 +11,7 @@ import { GateView } from './GateView';
 import { RenderView } from './RenderView';
 import { PublishView } from './PublishView';
 import { Empty, ErrorNote, PanelHeader } from '../components/ui';
+import { LiveActivity } from '../components/LiveActivity';
 import { STAGE_META } from '../lib/copy';
 import { duration } from '../lib/format';
 
@@ -40,14 +41,45 @@ export function StageView({ stageId, runId, state }: { stageId: string; runId: s
   if (!View) return <Empty>Unknown stage.</Empty>;
 
   if (stage?.status === 'failed') {
+    // A step fails in three quite different ways, and telling them apart is the whole
+    // difference between a useful error and a wild goose chase. `contract_violation` means
+    // the agent ran and its output was rejected — the shape-and-sources explanation applies.
+    // A timeout or a non-zero exit means the agent never ran, so nothing was checked at all.
+    //
+    // `crashed` is the third, and it is the one that used to be reported as the first: this
+    // app threw before the step did any work. There is no artifact to inspect, no retry that
+    // could behave differently, and nothing the editor can change — telling them their output
+    // "has to satisfy a fixed shape" here points them at a file that was never written.
+    const crashed = stage.crashed;
+    const ranAtAll = !crashed && stage.retries.every((r) => r.reason === 'contract_violation');
     return (
       <div>
         <PanelHeader n={meta.n} title={meta.title} blurb={meta.blurb} />
         <ErrorNote>
-          <div className="font-medium">This step could not produce a usable result.</div>
+          <div className="font-medium">
+            {crashed
+              ? 'This step could not start — the app hit a bug.'
+              : ranAtAll
+                ? 'This step could not produce a usable result.'
+                : 'This step could not run.'}
+          </div>
           <p className="mt-1 text-[12px]">
-            Its output has to satisfy a fixed shape, and every figure in it has to cite a source the agent actually
-            fetched. These are the checks it did not pass:
+            {crashed ? (
+              <>
+                The failure is in this app, not in your run, your settings or the agent's work. Nothing was sent and
+                nothing was charged. Continuing will stop here again until the bug is fixed — this is what to report:
+              </>
+            ) : ranAtAll ? (
+              <>
+                Its output has to satisfy a fixed shape, and every figure in it has to cite a source the agent actually
+                fetched. These are the checks it did not pass:
+              </>
+            ) : (
+              <>
+                The agent runtime stopped before it wrote anything, so nothing was checked. This is a problem with the
+                runtime or this machine, not with the editorial policy:
+              </>
+            )}
           </p>
           <ul className="mt-2 space-y-0.5">
             {stage.errors.slice(0, 12).map((e, i) => (
@@ -58,12 +90,46 @@ export function StageView({ stageId, runId, state }: { stageId: string; runId: s
           </ul>
           <p className="mt-2 text-[11px]">
             {stage.retries.length > 0
-              ? `It was retried ${stage.retries.length} time${stage.retries.length === 1 ? '' : 's'}, each time handed the exact errors above, before stopping. `
+              ? ranAtAll
+                ? `It was retried ${stage.retries.length} time${stage.retries.length === 1 ? '' : 's'}, each time handed the exact errors above, before stopping. `
+                : `It was retried ${stage.retries.length} time${stage.retries.length === 1 ? '' : 's'} before stopping. `
               : ''}
-            Nothing after this step ran. Use <span className="font-medium">Continue</span> to try this step again —
-            earlier steps are reused, not repeated.
+            {crashed ? (
+              <>
+                Nothing after this step ran. Everything before it is finished and saved, so once the bug is fixed{' '}
+                <span className="font-medium">Continue</span> picks up here without repeating any of it.
+              </>
+            ) : (
+              <>
+                Nothing after this step ran. Use <span className="font-medium">Continue</span> to try this step again —
+                earlier steps are reused, not repeated.
+              </>
+            )}
           </p>
+
+          {/* Collapsed: the editor does not need a stack trace, and the person they forward
+              this to needs nothing else. */}
+          {crashed && stage.crashStack && (
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[11px] select-none">Technical detail</summary>
+              <pre className="mt-1 overflow-x-auto font-mono text-[10px] leading-relaxed whitespace-pre-wrap">
+                {stage.crashStack}
+              </pre>
+            </details>
+          )}
         </ErrorNote>
+
+        {/* What it was doing before it gave up is usually the fastest route to why. */}
+        {stage.activity.length > 0 && (
+          <div className="mt-4">
+            <LiveActivity
+              activity={stage.activity}
+              counts={stage.activityCounts}
+              tokens={stage.tokens}
+              running={false}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -80,18 +146,51 @@ export function StageView({ stageId, runId, state }: { stageId: string; runId: s
   return (
     <div>
       {stage?.status === 'running' && (
-        <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-[#ecdcb6] bg-[#faf2e0] px-3 py-1.5 text-[12px] text-(--color-warn)">
-          <span className="live-dot">●</span>
-          <span>{meta.doing}…</span>
-          {stage.shards != null && (
-            <span className="tabular-nums">
-              {stage.shardsCompleted} of {stage.shards} parallel jobs done
-            </span>
-          )}
-          {stage.progress.length > 0 && (
-            <span className="text-(--color-ink-2)">{stage.progress[stage.progress.length - 1].message}</span>
-          )}
-        </div>
+        <>
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-[#ecdcb6] bg-[#faf2e0] px-3 py-1.5 text-[12px] text-(--color-warn)">
+            <span className="live-dot">●</span>
+            <span>{meta.doing}…</span>
+            {stage.attempts > 1 && <span>attempt {stage.attempts} of 3</span>}
+            {stage.shards != null && (
+              <span className="tabular-nums">
+                {stage.shardsCompleted} of {stage.shards} parallel jobs done
+              </span>
+            )}
+            {stage.progress.length > 0 && (
+              <span className="text-(--color-ink-2)">{stage.progress[stage.progress.length - 1].message}</span>
+            )}
+          </div>
+
+          {/* A step can run for minutes. This is the difference between watching it work
+              and watching a spinner. */}
+          <div className="mb-4">
+            <LiveActivity
+              activity={stage.activity}
+              counts={stage.activityCounts}
+              tokens={stage.tokens}
+              running
+            />
+          </div>
+        </>
+      )}
+
+      {/* A finished step keeps its working history — how a number was arrived at is part
+          of the answer, not scaffolding to be thrown away. */}
+      {stage?.status === 'ok' && stage.activity.length > 0 && (
+        <details className="mb-4 group">
+          <summary className="cursor-pointer list-none text-[11.5px] text-(--color-ink-3) hover:text-(--color-ink-2)">
+            <span className="inline-block text-[9px] transition-transform group-open:rotate-90">▶</span> How this step
+            worked — {stage.activityCounts.command} commands, {stage.activityCounts.search} searches
+          </summary>
+          <div className="mt-2">
+            <LiveActivity
+              activity={stage.activity}
+              counts={stage.activityCounts}
+              tokens={stage.tokens}
+              running={false}
+            />
+          </div>
+        </details>
       )}
 
       {stage?.degraded && (

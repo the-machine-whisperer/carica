@@ -16,5 +16,5 @@ if [ ! -d node_modules ]; then
   npm install || exit 1
 fi
 
-printf '  Opening http://127.0.0.1:4317 — leave this window open.\n\n'
+printf '  Opening http://127.0.0.1:4417 — leave this window open.\n\n'
 exec npm start

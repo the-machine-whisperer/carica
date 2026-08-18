@@ -15,7 +15,7 @@ import {
   systemStatus,
 } from '../src/setup.js';
 import { codexReadiness } from '@carica/codex';
-import { CONFIG_DIR, RUNS_DIR } from '@carica/core';
+import { CONFIG_DIR, RUNS_DIR, listRuns } from '@carica/core';
 
 /**
  * The control plane: starting, stopping and configuring runs from the app rather than a
@@ -333,7 +333,9 @@ describe('settings', () => {
     const view = settingsView();
     assert.ok(view.settings.length >= 2);
     assert.ok(view.settings.every((s) => typeof s.present === 'boolean'));
-    assert.equal(view.settings.find((s) => s.key === 'CARICA_CODEX_MODEL').fallback, 'gpt-5-codex');
+    // Blank on purpose: naming a model here overrides the Codex sign-in's own choice, and a
+    // model the account is not entitled to fails every step of a live run with a 400.
+    assert.equal(view.settings.find((s) => s.key === 'CARICA_CODEX_MODEL').fallback, '');
   });
 });
 
@@ -381,5 +383,71 @@ describe('rubric weights', () => {
     });
     assert.ok(res.warning, 'an off-scale rubric should say so');
     assert.match(res.warning, /1\.30|1\.3/);
+  });
+});
+
+describe('starting partway through, on another run’s results', () => {
+  test('lists what could be carried over, and how far each source reaches', async () => {
+    const r = await app.inject({ method: 'GET', url: '/api/seed-sources' });
+    assert.equal(r.statusCode, 200);
+    const { sources } = r.json();
+    assert.ok(sources.length, 'the fixtures alone should provide at least one');
+    for (const s of sources) {
+      assert.ok(['run', 'fixture'].includes(s.kind));
+      assert.ok(s.stages.length > 0, 'a source with nothing to offer must not be listed');
+      assert.equal(s.through, s.stages[s.stages.length - 1]);
+    }
+    assert.ok(sources.some((s) => s.kind === 'fixture'), 'a practice snapshot is a legitimate source');
+  });
+
+  test('the offered stages are contiguous from step 1 — a gap makes later steps unreachable', async () => {
+    const { sources } = (await app.inject({ method: 'GET', url: '/api/seed-sources' })).json();
+    const { STAGES } = await import('@carica/pipeline');
+    const order = STAGES.map((s) => s.id);
+    for (const s of sources) {
+      assert.deepEqual(s.stages, order.slice(0, s.stages.length), `${s.id} advertised a gap`);
+    }
+  });
+
+  test('carrying over needs a step to start at', async () => {
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/runs',
+      payload: { mode: 'replay', seedFrom: '2026-08-11_sample' },
+    });
+    assert.equal(r.statusCode, 400);
+    assert.match(r.json().error, /needs a step to start at/i);
+  });
+
+  test('starting at the first step has nothing to carry over', async () => {
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/runs',
+      payload: { mode: 'replay', from: 'outlets', seedFrom: '2026-08-11_sample' },
+    });
+    assert.equal(r.statusCode, 400);
+    assert.match(r.json().error, /nothing to carry over/i);
+  });
+
+  test('continuing a run and carrying results in are refused together', async () => {
+    const runs = listRuns();
+    const r = await app.inject({
+      method: 'POST',
+      url: '/api/runs',
+      payload: { mode: 'replay', from: 'cluster', resumeRunId: runs[0].runId, seedFrom: '2026-08-11_sample' },
+    });
+    assert.equal(r.statusCode, 400);
+    assert.match(r.json().error, /already has its earlier results/i);
+  });
+
+  test('a path that tries to escape the runs directory is refused', async () => {
+    for (const bad of ['../../etc', '/etc/passwd', 'a/../../b']) {
+      const r = await app.inject({
+        method: 'POST',
+        url: '/api/runs',
+        payload: { mode: 'replay', from: 'cluster', seedFrom: bad },
+      });
+      assert.equal(r.statusCode, 400, `${bad} must be refused`);
+    }
   });
 });

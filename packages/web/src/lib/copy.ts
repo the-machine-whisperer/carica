@@ -10,6 +10,8 @@
  * mechanism — `06_verified.json` is still on screen — we just stop leading with it.
  */
 
+import type { JobTotals } from '@carica/core/browser';
+
 export interface StageCopy {
   n: number;
   /** What the step is called in the rail and in headings. */
@@ -113,16 +115,170 @@ export const RUN_STATUS: Record<string, { label: string; tone: 'ok' | 'warn' | '
   failed: { label: 'Stopped on a problem', tone: 'bad', hint: 'A step could not produce a usable result.' },
   cancelled: { label: 'Stopped by you', tone: 'neutral', hint: 'You stopped this run. Everything it had already finished is kept.' },
   interrupted: { label: 'Interrupted', tone: 'warn', hint: 'The app closed while this run was going. You can continue it from where it stopped.' },
+  paused: { label: 'Paused', tone: 'warn', hint: 'Held where it is. The agents are still here — press Resume and they carry on from the same place.' },
   unknown: { label: 'Unknown', tone: 'neutral', hint: '' },
 };
 
 export const STAGE_STATUS: Record<string, string> = {
   pending: 'Not started',
   running: 'Working',
+  paused: 'Paused',
   ok: 'Done',
   failed: 'Problem',
   skipped: 'Reused',
 };
+
+// ------------------------------------------------------------------ jobs
+
+/**
+ * A step that reads fourteen outlets is fourteen pieces of work happening at once. The
+ * pipeline calls each one a shard; the editor sees a **job**, because that is what it is —
+ * one agent, doing one thing, which can be watched, held or stopped on its own.
+ *
+ * Nothing here ever says "shard", and nothing ever prints a job id. A job is named by the
+ * step it belongs to and the source it is reading.
+ */
+export const JOB_STATUS: Record<string, { label: string; tone: 'ok' | 'warn' | 'bad' | 'neutral' | 'accent'; hint: string }> = {
+  pending: { label: 'Waiting', tone: 'neutral', hint: 'Queued. It has not started yet.' },
+  running: { label: 'Working', tone: 'accent', hint: 'An agent is on this now.' },
+  paused: { label: 'Paused', tone: 'warn', hint: 'Held where it is. It has not been thrown away — it carries on when you resume.' },
+  ok: { label: 'Done', tone: 'ok', hint: 'Finished, and its result passed its checks.' },
+  failed: { label: 'Problem', tone: 'bad', hint: 'It could not finish. The step records the gap rather than hiding it.' },
+  killed: { label: 'Stopped', tone: 'neutral', hint: 'You stopped this one. The step carried on without it.' },
+  skipped: { label: 'Skipped', tone: 'neutral', hint: 'Left out. Either its result was already on disk, or you chose to pass over it.' },
+};
+
+/** Job counts as one readable line: "12 jobs running, 4 done, 1 stopped". */
+export function jobTally(totals: JobTotals | null | undefined): string {
+  if (!totals) return '';
+  const order: [keyof JobTotals, (n: number) => string][] = [
+    ['running', (n) => `${n} running`],
+    ['paused', (n) => `${n} paused`],
+    ['ok', (n) => `${n} done`],
+    ['failed', (n) => (n === 1 ? '1 could not finish' : `${n} could not finish`)],
+    ['killed', (n) => `${n} stopped`],
+    ['skipped', (n) => `${n} skipped`],
+    ['pending', (n) => `${n} still to start`],
+  ];
+  const parts: string[] = [];
+  for (const [key, say] of order) {
+    const n = totals[key] ?? 0;
+    if (n > 0) parts.push(say(n));
+  }
+  if (!parts.length) return '';
+  // The noun rides on the first phrase only, so the line reads as a sentence rather than a table.
+  parts[0] = parts[0].replace(/^(\d+) /, (_m, n) => `${n} ${Number(n) === 1 ? 'job' : 'jobs'} `);
+  return parts.join(', ');
+}
+
+// ------------------------------------------------------------------ steering a run
+
+/**
+ * Four things you can do to work in progress, and the one distinction that matters most
+ * in this app: **Pause is not Stop.**
+ *
+ * Pause holds the agents where they are and lets them carry on. Stop ends the run. Getting
+ * that wrong costs twenty minutes and real money, so both are spelled out wherever either
+ * one is offered — never as a tooltip, and never as an icon on its own.
+ */
+export const CONTROL_COPY = {
+  pause: {
+    label: 'Pause',
+    hint: 'Holds this run where it is. The agents stay alive and keep their place, nothing new is started while it waits, and Resume carries on from the same point.',
+    ack: 'Pausing. The agents hold their place until you resume.',
+  },
+  resume: {
+    label: 'Resume',
+    hint: 'Carries on from exactly where it was held.',
+    ack: 'Carrying on.',
+  },
+  stop: {
+    label: 'Stop run',
+    hint: 'Ends the run. The agents are shut down — this is not a pause. Everything already finished stays in the run’s folder, and you can start it again from any step later.',
+    ack: 'Stopping after the current step finishes writing.',
+  },
+  kill: {
+    label: 'Stop this one',
+    hint: 'Stops this piece of work and leaves it out. The step carries on with whatever else came back, and the gap is written into the result rather than hidden.',
+    ack: 'Stopped. The step carries on without it.',
+  },
+  skip: {
+    label: 'Skip',
+    hint: 'Passes over this without running it. Nothing is produced for it and the step moves on.',
+    ack: 'Skipped.',
+  },
+  /** Held on the whole screen, not tucked into a badge — a paused run that looks slow is a support call. */
+  pausedBanner: {
+    title: 'This run is paused.',
+    body: 'It is not stuck and it is not working. The agents are holding their place, nothing new is being started, and everything finished so far is safe.',
+    action: 'Resume the run',
+  },
+  pausedStepsNote: (n: number) => `${n === 1 ? 'One step is' : `${n} steps are`} on hold while the rest of the run carries on.`,
+  /**
+   * Said before the whole run is stopped for good.
+   *
+   * Stopping one step or one job is confirmed in place, on the tile being stopped, by the
+   * map itself — a dialog for a single job would be heavier than the act. This is the one
+   * case that takes everything down at once, so it gets asked properly.
+   */
+  confirmKillRun: {
+    title: 'Stop everything in this run?',
+    body: 'Every agent still working is shut down. Steps that already finished keep their results, and you can carry the run on from any step afterwards — but the work in progress is lost. To hold the run without losing it, use Pause instead.',
+    confirm: 'Stop everything',
+  },
+  cancel: 'Leave it running',
+} as const;
+
+// ------------------------------------------------------------------ carrying a run on
+
+/**
+ * Everything a run writes stays in its folder, so a run that stopped half way is not a
+ * loss — it is a place to start from. This is the vocabulary for that: **milestones** are
+ * the points in the run that have a finished result on disk, and carrying on from one of
+ * them re-runs that step and everything after it.
+ *
+ * The consequence is stated where the choice is made. An editor who has to hover to find
+ * out what a button costs will click it once and then never again.
+ */
+export const RESUME_COPY = {
+  title: 'Carry this run on',
+  description:
+    'Everything this run finished is still in its folder. Pick the step it should pick up from — the run keeps its name and its record, it does not become a second run.',
+  /** The difference from the other flow that also mentions steps, said once, plainly. */
+  versusNewRun:
+    'This carries on the same run. To start a fresh run on this one’s early results instead, use Start a run and set “Start at”.',
+  chooseLabel: 'Start again from',
+  consequence: (title: string, before: number) =>
+    before > 0
+      ? `The ${before === 1 ? 'step' : `${before} steps`} before ${title} are reused from the files already in this folder — they are not paid for twice. ${title} and every step after it runs again.`
+      : `${title} and every step after it runs again. Nothing is reused, because nothing came before it.`,
+  revalidation:
+    'Before anything runs, each reused result is checked against the shape it is required to have. Anything that no longer passes is re-run whether you picked it or not.',
+  notResumable: 'Not available: an earlier step has no result on disk to reuse, so the run cannot pick up here.',
+  neverRan: 'Never ran.',
+  finishedAt: (t: string) => `Finished ${t}.`,
+  couldNotFinish: 'This is where the run stopped.',
+  reused: 'Reused from an earlier run.',
+  onDisk: (file: string) => `Its result is on disk (${file}).`,
+  noResult: 'Nothing was written for this step.',
+  action: (title: string) => `Carry on from ${title}`,
+  running: 'This run is still going. Stop it before carrying it on from an earlier step.',
+  /** Jobs the editor stopped on purpose. The default respects that decision. */
+  killedTitle: 'Jobs you stopped',
+  killedBody:
+    'You stopped these on purpose, so a run carried on from here leaves them out again. Tick the box if you have changed your mind and want them tried once more.',
+  killedRetryLabel: 'Try these again this time',
+  ack: 'Carrying the run on.',
+  empty: 'This run has nothing on disk to carry on from. Start it again from the beginning instead.',
+  /** On the home screen, on a run that stopped part way. */
+  homeAction: 'Continue from…',
+} as const;
+
+/** The two ways of looking at a run in progress. */
+export const VIEW_COPY = {
+  graph: { label: 'Map', hint: 'Every step and every job at once, and what each one is doing.' },
+  list: { label: 'List', hint: 'The eleven steps in order, one line each.' },
+} as const;
 
 /**
  * Terms that earn a definition in place. Anything an editor might reasonably stop at,

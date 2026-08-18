@@ -18,12 +18,48 @@ export const EVENT_TYPES = /** @type {const} */ ([
   'stage.error',
   'agent.spawn',
   'agent.output',
+  // What the agent is doing right now: a command run, a search issued, a file written, a
+  // line of its own reasoning. Emitted by the stage runner since the day it could parse
+  // Codex's stream, and — until this was noticed — never written down here. That gap was
+  // not harmless: this array is the list the review app subscribes to, and an event type
+  // absent from it is delivered by nobody and seen by no one.
+  'agent.activity',
   'agent.retry',
   'artifact.write',
+  // DECLARED, NOT YET EMITTED. Nothing in the pipeline writes either of these today —
+  // evidence goes out as a count on `artifact.write`, and the gate's verdict is read from
+  // 09_gate.json rather than announced. They are kept because they name real things a stage
+  // could reasonably say, and removed from nothing because the review app already listens
+  // for them. Do not build a surface that WAITS for one: it will wait for ever.
   'evidence.write',
   'gate.verdict',
   'human.required',
   'human.decision',
+  // ---- editorial control over work in flight ----
+  //
+  // Appended after the originals and never reordered: `seq` is the only ordering that
+  // matters on disk, but this array is also the human-readable list of everything a run
+  // can say about itself, and reshuffling it would silently rewrite what old logs mean.
+  //
+  // A job is one unit of agent work — a shard of a fanned-out stage, or a plain stage
+  // standing alone. Pausing, resuming, killing and skipping are things an editor DOES to
+  // a job, and they are events in exactly the same sense an agent's own actions are: the
+  // run directory has to be able to explain why an outlet was never harvested, and
+  // "because a person stopped it at 09:41" is an answer only the log can give.
+  'job.paused',
+  'job.resumed',
+  'job.killed',
+  'job.skipped',
+  'stage.paused',
+  'stage.resumed',
+  'run.paused',
+  'run.resumed',
+  // The request/applied pair is deliberately two events. An editor's click and the
+  // worker's acknowledgement are separated by however long the agent takes to notice,
+  // and collapsing them into one would make the UI claim a kill landed before it did.
+  'control.request',
+  'control.applied',
+  'checkpoint.write',
 ]);
 
 export class EventBus {

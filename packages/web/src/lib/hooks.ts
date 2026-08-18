@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { projectRun, type RunState } from '@carica/core/browser';
-import { api } from './api';
+import { api, type ControlAction, type ControlTarget } from './api';
 
 /**
  * Live run state over SSE.
@@ -53,10 +53,21 @@ export function useRunStream(runId: string | null) {
         }
       };
 
+      // Every event type the run can emit must be named here.
+      //
+      // EventSource only delivers a named event to a listener for that name (the generic
+      // `onmessage` sees nothing but unnamed frames), so an event missing from this list is
+      // not "handled later" — it is invisible, silently, forever. Adding an event type to
+      // the pipeline means adding it here in the same change.
       for (const type of [
         'run.start', 'run.end', 'stage.start', 'stage.progress', 'stage.end', 'stage.error',
-        'agent.spawn', 'agent.output', 'agent.retry', 'artifact.write', 'evidence.write',
+        'agent.spawn', 'agent.output', 'agent.activity', 'agent.retry', 'artifact.write', 'evidence.write',
         'gate.verdict', 'human.required', 'human.decision', 'message',
+        // steering: one job, one step, or the whole run
+        'job.paused', 'job.resumed', 'job.killed', 'job.skipped',
+        'stage.paused', 'stage.resumed', 'run.paused', 'run.resumed',
+        // the request, and the confirmation that it took effect
+        'control.request', 'control.applied', 'checkpoint.write',
       ]) {
         es.addEventListener(type, onAny as EventListener);
       }
@@ -80,6 +91,57 @@ export function useRunStream(runId: string | null) {
 
   const state: RunState = useMemo(() => projectRun(events), [events]);
   return { events, state, connected, error };
+}
+
+/** A stable key for one target, so two tiles in flight at once do not share a spinner. */
+export function controlTargetKey(target: ControlTarget): string {
+  if (target.kind === 'run') return 'run';
+  if (target.kind === 'stage') return `stage:${target.stage}`;
+  return `job:${target.job_id}`;
+}
+
+/**
+ * Pause, resume, kill or skip — and the small honest gap in between.
+ *
+ * Clicking "stop" on a shard sends a request and gets back a receipt. The shard is not
+ * stopped yet: an agent is mid-fetch somewhere and the run has to reach a point where it
+ * can put it down. The truth about what happened arrives over SSE, and the projection is
+ * the only thing this app renders.
+ *
+ * So `pending` is deliberately *only* the interval between the click and the confirming
+ * event. It exists so a tile can say "stopping…" instead of looking dead, and for no other
+ * reason. It never sets a status, never removes a job, never pretends the run log said
+ * something it did not say — if the request succeeds and the run then declines to stop, the
+ * screen keeps showing "running", because that is what is true.
+ */
+export function useJobControl(runId: string | null) {
+  const [pending, setPending] = useState<Record<string, ControlAction>>({});
+  const [error, setError] = useState<string | null>(null);
+
+  const control = useCallback(
+    async (action: ControlAction, target: ControlTarget) => {
+      if (!runId) return;
+      const key = controlTargetKey(target);
+      setPending((p) => ({ ...p, [key]: action }));
+      setError(null);
+      try {
+        await api.control(runId, action, target);
+      } catch (e: any) {
+        setError(String(e?.message ?? e));
+        throw e;
+      } finally {
+        // Clear on the reply, not on the confirming event: holding "stopping…" until the
+        // run agrees would strand the label forever if the run has already ended.
+        setPending((p) => {
+          const { [key]: _gone, ...rest } = p;
+          return rest;
+        });
+      }
+    },
+    [runId]
+  );
+
+  return { control, pending, error };
 }
 
 /** Fetch an artifact once per (run, name); refetch when the stage completes again. */

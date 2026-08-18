@@ -1,4 +1,5 @@
 import { HISTORY_DIR } from '@carica/core';
+import { intersectRanked } from './allowlist.js';
 
 /**
  * The stage registry — the pipeline's spine.
@@ -55,7 +56,19 @@ export const STAGES = [
     fanout: {
       from: '01_outlets.json',
       // One shard per outlet. These are independent — they fan out.
-      select: (a) => (a.outlets ?? []).map((o) => ({ key: o.id, label: o.name_en, ctx: o })),
+      //
+      // `allowlist` narrows and never adds: the shards are the outlets S1 actually ranked,
+      // intersected with what the editor allowed. An outlet the editor asked for that S1
+      // never ranked comes back as `missing` so the run can say so out loud, rather than
+      // being conjured into a shard with no ranking behind it.
+      select: (a, { allowlist } = {}) => {
+        const { kept, skipped, missing } = intersectRanked(a.outlets ?? [], allowlist);
+        return {
+          shards: kept.map((o) => ({ key: o.id, label: o.name_en, ctx: o })),
+          skipped,
+          missing,
+        };
+      },
       merge: mergeHarvest,
       partKey: 'items',
     },
@@ -207,6 +220,17 @@ export const STAGES = [
 ];
 
 export const STAGE_BY_ID = Object.fromEntries(STAGES.map((s) => [s.id, s]));
+
+/**
+ * The stage titles, as plain data, for core's `deriveCheckpoint`.
+ *
+ * Core cannot import this file — pipeline imports core, and reversing that is a cycle — so
+ * `deriveCheckpoint` takes the titles as an argument and falls back to bare stage ids when
+ * nobody passes them. This is the thing to pass. Anyone deriving a checkpoint outside the
+ * pipeline (the server's runs list, a repair script) should pass it too, or the resume
+ * picker offers "render" where it should offer "Draft render".
+ */
+export const STAGE_META = Object.fromEntries(STAGES.map((s) => [s.id, { n: s.n, title: s.title }]));
 
 /**
  * The stage graph as plain data — no functions, so it survives JSON.
